@@ -7,7 +7,8 @@
     max-width: 400px;
     max-width: 400px;
     position: relative;
-    padding: var(--spacing-sm);
+    padding: 0;
+    /* Minimal padding */
     /* Reduced padding */
 }
 
@@ -43,9 +44,10 @@
 .whole {
     border-color: var(--color-primary);
     color: var(--color-primary);
-    width: 85px;
-    height: 85px;
-    font-size: 2.5rem;
+    width: 70px;
+    /* Reduced from 85px */
+    height: 70px;
+    font-size: 2rem;
 }
 
 .missing {

@@ -11,17 +11,9 @@ const Keypad = ({ onKeyPress }) => {
                     {n}
                 </button>
             ))}
-
-            {/* Empty Spacer */}
-            <div />
-
-            {/* 0 Button */}
             <button className={styles.key} onClick={() => onKeyPress('0')}>
                 0
             </button>
-
-            {/* Empty Spacer */}
-            <div />
         </div>
     );
 };

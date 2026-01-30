@@ -26,15 +26,18 @@ const GameScreen = ({
                 <div className={styles.score}>Score: {score}</div>
             </div>
 
-            <div className={styles.gameArea}>
-                <BondDiagram
-                    bond={currentBond}
-                    userInput={userInput}
-                    feedback={feedback}
-                />
-            </div>
 
-            <Keypad onKeyPress={onKeyPress} />
+            <div className={styles.mainContent}>
+                <div className={styles.gameArea}>
+                    <BondDiagram
+                        bond={currentBond}
+                        userInput={userInput}
+                        feedback={feedback}
+                    />
+                </div>
+
+                <Keypad onKeyPress={onKeyPress} />
+            </div>
         </div>
     );
 };
