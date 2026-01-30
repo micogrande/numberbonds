@@ -57,7 +57,10 @@
 
 /* Game Screen */
 .gameContainer {
-    justify-content: space-between;
+    justify-content: center;
+    /* Center content together to reduce middle gap */
+    gap: var(--spacing-md);
+    /* Small gap between diagram and keypad */
 }
 
 .header {

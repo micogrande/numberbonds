@@ -1,11 +1,12 @@
 .keypad {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: var(--spacing-md);
+    gap: var(--spacing-sm);
     width: 100%;
-    max-width: 350px;
+    max-width: 240px;
+    /* Reduced from 300px (~20% smaller) */
     margin: 0 auto;
-    padding: var(--spacing-md);
+    padding: var(--spacing-sm);
 }
 
 .key {
@@ -15,7 +16,8 @@
     /* Fully rounded pills/circles */
     aspect-ratio: 1;
     /* Make them circles */
-    font-size: 1.8rem;
+    font-size: 1.25rem;
+    /* Reduced from 1.5rem (~17-20% smaller) */
     font-weight: 700;
     color: var(--color-text);
     box-shadow: var(--shadow-md);
