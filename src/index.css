@@ -1,0 +1,52 @@
+@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+@import './styles/variables.css';
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-family: var(--font-body);
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    overscroll-behavior: none;
+    /* Prevent pull-to-refresh on mobile */
+    overflow: hidden;
+    /* App-like feel */
+    height: 100vh;
+    width: 100vw;
+}
+
+#root {
+    height: 100%;
+    width: 100%;
+    isolation: isolate;
+}
+
+button {
+    border: none;
+    background: none;
+    font: inherit;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+/* Utilities */
+.center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.full-screen {
+    height: 100%;
+    width: 100%;
+    position: relative;
+}

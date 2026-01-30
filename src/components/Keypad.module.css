@@ -1,0 +1,58 @@
+.keypad {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-md);
+    width: 100%;
+    max-width: 350px;
+    margin: 0 auto;
+    padding: var(--spacing-md);
+}
+
+.key {
+    background: var(--color-surface);
+    border: none;
+    border-radius: var(--radius-round);
+    /* Fully rounded pills/circles */
+    aspect-ratio: 1;
+    /* Make them circles */
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--color-text);
+    box-shadow: var(--shadow-md);
+    transition: transform 0.1s, background-color 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.key:active {
+    transform: scale(0.95);
+    background-color: var(--color-bg);
+}
+
+.key.backspace {
+    color: var(--color-error);
+    background-color: #fef2f2;
+}
+
+.key.enter {
+    color: var(--color-success);
+    background-color: #f0fdf4;
+}
+
+/* Place 0 in the middle bottom - Grid is 3 columns */
+/* Row 4: [Enter, 0, Backspace] */
+
+/* Enter is 1st child of last row? No. */
+/* Grid items are: 1-9 (9 items). item 10 is Enter. item 11 is 0. item 12 is Backspace. */
+/* Standard flow works: Left (Enter), Center (0), Right (Backspace) */
+
+/* Place 0 in the middle bottom */
+.key:nth-last-child(2) {
+    grid-column: 2;
+}
+
+/* Backspace to the right of 0 */
+.key:last-child {
+    grid-column: 3;
+}

@@ -1,0 +1,37 @@
+.summaryContainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    gap: var(--spacing-lg);
+    text-align: center;
+}
+
+.summaryTitle {
+    font-size: 2.5rem;
+    font-weight: 900;
+    color: var(--color-primary);
+}
+
+.summaryScore {
+    font-size: 4rem;
+    font-weight: 900;
+    color: var(--color-success);
+}
+
+.summaryDetails {
+    font-size: 1.25rem;
+    color: var(--color-text-light);
+}
+
+.restartButton {
+    background: var(--color-primary);
+    color: white;
+    padding: var(--spacing-md) var(--spacing-xl);
+    border-radius: var(--radius-lg);
+    font-size: 1.5rem;
+    font-weight: 700;
+    box-shadow: var(--shadow-md);
+    margin-top: var(--spacing-xl);
+}
