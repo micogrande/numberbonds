@@ -13,7 +13,7 @@ function App() {
                 <HomeScreen onStart={game.startGame} />
             )}
 
-            {game.mode === game.MODES.PRACTICE && (
+            {(game.mode === game.MODES.PRACTICE || game.mode === game.MODES.PRACTICE_PARTS) && (
                 <GameScreen
                     gameData={game}
                     onKeyPress={game.handleKeypad}

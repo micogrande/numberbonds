@@ -33,6 +33,39 @@ export const generateDeck = (whole) => {
     return deck;
 };
 
+/**
+ * Generates a mixed deck where the Whole is missing (Sum Game).
+ * Covers numbers from 3 up to max.
+ * @param {number} max - The max whole number
+ * @returns {Array} Array of bond objects
+ */
+export const generateMixedDeck = (max) => {
+    const deck = [];
+
+    // Generate bonds for each number from 3 to max
+    for (let w = 3; w <= max; w++) {
+        // Generate a random pair for this whole number
+        // Ensure parts are somewhat random
+        const part1 = Math.floor(Math.random() * (w + 1));
+        const part2 = w - part1;
+
+        deck.push({
+            whole: w,
+            parts: [part1, part2],
+            missingIndex: 'WHOLE', // Special flag for missing whole
+            answer: w
+        });
+    }
+
+    // Shuffle logic (Fisher-Yates)
+    for (let i = deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [deck[i], deck[j]] = [deck[j], deck[i]];
+    }
+
+    return deck;
+};
+
 export const generateBond = (whole) => {
     // Deprecated for main game, keeping for legacy/testing
     const deck = generateDeck(whole);

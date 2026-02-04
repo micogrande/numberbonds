@@ -16,6 +16,14 @@ const HomeScreen = ({ onStart }) => {
                     Practice Bonds to {practiceTarget}
                 </button>
 
+                <button
+                    className={styles.secondaryButton}
+                    onClick={() => onStart('PRACTICE_PARTS', practiceTarget)}
+                    style={{ width: '100%' }}
+                >
+                    Practice Parts up to {practiceTarget}
+                </button>
+
                 {/* Number Selectors */}
                 <div className={styles.numberGrid}>
                     {/* Range 3-20 (18 numbers) - Perfect 6x3 Grid */}

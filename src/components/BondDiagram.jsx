@@ -30,18 +30,30 @@ const BondDiagram = ({ bond, userInput, feedback }) => {
             </svg>
 
             <div className={styles.wholePosition}>
-                <motion.div
-                    className={`${styles.circle} ${styles.whole}`}
-                    variants={circleVariants}
-                    initial="hidden"
-                    animate="visible"
-                >
-                    {whole}
-                </motion.div>
+                {(() => {
+                    const isMissing = missingIndex === 'WHOLE';
+                    const content = isMissing ? (userInput || '?') : whole;
+                    const isFilled = isMissing && userInput.length > 0;
+                    const isCorrection = isMissing && feedback === 'correction';
+                    const isSuccess = isMissing && feedback === 'success';
+
+                    return (
+                        <motion.div
+                            className={`${styles.circle} ${styles.whole} ${isMissing ? styles.missing : ''} ${isFilled ? styles.filled : ''} ${isCorrection ? styles.correction : ''} ${isSuccess ? styles.success : ''}`}
+                            variants={isMissing ? shakeVariants : circleVariants}
+                            initial={isMissing ? "idle" : "hidden"}
+                            animate={isMissing ? feedback : "visible"}
+                        >
+                            {content}
+                        </motion.div>
+                    );
+                })()}
             </div>
 
             <div className={styles.partsContainer}>
                 {parts.map((val, idx) => {
+                    // Standard logic: if missingIndex is a number, check it.
+                    // If missingIndex is 'WHOLE', then parts are NEVER missing.
                     const isMissing = idx === missingIndex;
                     const content = isMissing ? (userInput || '?') : val;
                     const isFilled = isMissing && userInput.length > 0;

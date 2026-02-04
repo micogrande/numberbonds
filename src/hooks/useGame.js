@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react';
-import { generateDeck } from '../engines/BondEngine';
+import { generateDeck, generateMixedDeck } from '../engines/BondEngine';
 import confetti from 'canvas-confetti';
 
 const MODES = {
     MENU: 'MENU',
     PRACTICE: 'PRACTICE',
+    PRACTICE_PARTS: 'PRACTICE_PARTS',
     SUMMARY: 'SUMMARY'
 };
 
@@ -31,7 +32,13 @@ export const useGame = () => {
         setTarget(targetVal);
 
         // Initialize Session
-        const newDeck = generateDeck(targetVal);
+        let newDeck;
+        if (selectedMode === MODES.PRACTICE_PARTS) {
+            newDeck = generateMixedDeck(targetVal);
+        } else {
+            newDeck = generateDeck(targetVal);
+        }
+
         setDeck(newDeck);
         setCurrentIndex(0);
         setCurrentBond(newDeck[0]);
