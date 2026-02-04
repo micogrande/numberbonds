@@ -2,6 +2,7 @@ import React from 'react';
 import styles from '../styles/Screens.module.css';
 import BondDiagram from '../components/BondDiagram';
 import Keypad from '../components/Keypad';
+import Timer from '../components/Timer';
 import { Home } from 'lucide-react';
 
 const GameScreen = ({
@@ -23,7 +24,10 @@ const GameScreen = ({
                     {currentIndex !== undefined && total ? `${currentIndex + 1} / ${total}` : ''}
                 </div>
 
-                <div className={styles.score}>Score: {score}</div>
+                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                    <Timer startTime={gameData.startTime} />
+                    <div className={styles.score}>Score: {score}</div>
+                </div>
             </div>
 
 

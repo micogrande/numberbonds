@@ -25,6 +25,7 @@ function App() {
                 <SummaryScreen
                     score={game.score}
                     total={game.total}
+                    finalTime={game.finalTime}
                     onRestart={() => game.startGame(game.MODES.MENU)}
                 />
             )}

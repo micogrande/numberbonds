@@ -88,6 +88,42 @@
     padding-bottom: var(--spacing-xl);
     /* Push up slightly */
     gap: var(--spacing-lg);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+}
+
+.numberGrid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--spacing-sm);
+    margin: var(--spacing-lg) auto;
+    width: 100%;
+    max-width: fit-content;
+}
+
+.numberButton {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    font-weight: 900;
+    font-size: 1.25rem;
+    border: 2px solid var(--color-text-light);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    color: var(--color-text);
+}
+
+.numberButton.active {
+    background: var(--color-primary);
+    color: white;
+    transform: scale(1.1);
+    border-color: var(--color-primary);
 }
 
 .gameArea {

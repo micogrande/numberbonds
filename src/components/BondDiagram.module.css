@@ -71,6 +71,14 @@
     /* Light Amber */
 }
 
+.missing.success {
+    border-style: solid;
+    border-color: var(--color-success);
+    color: var(--color-success);
+    background-color: #f0fdf4;
+    /* Light Green */
+}
+
 .linesSvg {
     position: absolute;
     top: 50%;

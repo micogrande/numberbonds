@@ -36,6 +36,7 @@ The goal is to build a "Number Bonds" (Part-Part-Whole) practice app.
 - **Single Page App**: The experience should feel like a native app (no page reloads).
 - **Responsive**: scaling fonts (clamp) and flexible layouts.
 - **Code Quality**: Functional components, clear prop types (or TS interfaces), simple hooks.
+- **NEVER Replace with Comments**: When using `replace_file_content`, NEVER use placeholders like `// ... existing code ...`. You MUST provide the full content for the replaced block, or use small targeted replacements. The tool writes EXACTLY what you send.
 
 ## Roadmap
 1.  **Setup**: Initialize React+Vite project.

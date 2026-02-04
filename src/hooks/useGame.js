@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import { generateDeck } from '../engines/BondEngine';
 import confetti from 'canvas-confetti';
 
@@ -17,10 +17,14 @@ export const useGame = () => {
     const [currentBond, setCurrentBond] = useState(null);
     const [currentIndex, setCurrentIndex] = useState(0);
 
-    // UI State
+    // UX State
     const [userInput, setUserInput] = useState('');
     const [feedback, setFeedback] = useState('idle');
-    const [score, setScore] = useState(0); // Correct count
+    const [score, setScore] = useState(0);
+
+    // Timer State
+    const [startTime, setStartTime] = useState(null);
+    const [finalTime, setFinalTime] = useState(0);
 
     const startGame = (selectedMode, targetVal = 10) => {
         setMode(selectedMode);
@@ -34,6 +38,8 @@ export const useGame = () => {
         setScore(0);
         setUserInput('');
         setFeedback('idle');
+        setStartTime(Date.now());
+        setFinalTime(0);
     };
 
     const nextProblem = useCallback(() => {
@@ -47,17 +53,10 @@ export const useGame = () => {
             setCurrentBond(deck[nextIdx]);
         } else {
             // Session Complete
+            setFinalTime(Date.now() - startTime);
             setMode(MODES.SUMMARY);
         }
-    }, [currentIndex, deck]);
-
-    // Trigger first problem when mode changes to active
-    // This useEffect is no longer needed as startGame now initializes the first problem
-    // useEffect(() => {
-    //     if (mode !== MODES.MENU) {
-    //         nextProblem();
-    //     }
-    // }, [mode, nextProblem]);
+    }, [currentIndex, deck, startTime]);
 
     const submitInput = (val) => {
         if (feedback !== 'idle') return;
@@ -99,25 +98,20 @@ export const useGame = () => {
     const handleKeypad = (key) => {
         if (feedback !== 'idle') return;
 
-        const nextInput = userInput + key;
-
-        // 1. Check Exact Match (WIN)
-        if (parseInt(nextInput, 10) === currentBond.answer) {
-            setUserInput(nextInput);
-            submitInput(nextInput);
+        if (key === 'ENTER') {
+            submitInput(userInput);
             return;
         }
 
-        // 2. Check Prefix Match (WAIT)
-        const answerString = currentBond.answer.toString();
-        if (answerString.startsWith(nextInput)) {
-            setUserInput(nextInput);
+        if (key === 'DEL') {
+            setUserInput(prev => prev.slice(0, -1));
             return;
         }
 
-        // 3. No match? (FAIL)
-        setUserInput(nextInput);
-        submitInput(nextInput);
+        // Limit input length to 3 digits
+        if (userInput.length >= 3) return;
+
+        setUserInput(prev => prev + key);
     };
 
     return {
@@ -130,6 +124,8 @@ export const useGame = () => {
         feedback,
         startGame,
         handleKeypad,
-        MODES
+        MODES,
+        startTime,
+        finalTime
     };
 };

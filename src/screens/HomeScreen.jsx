@@ -16,41 +16,25 @@ const HomeScreen = ({ onStart }) => {
                     Practice Bonds to {practiceTarget}
                 </button>
 
-                {/* Number Selector (5-10) */}
-                <div style={{
-                    display: 'flex',
-                    gap: '12px',
-                    justifyContent: 'center',
-                    // fit all on one row
-                    flexWrap: 'nowrap',
-                    maxWidth: '100%',
-                    margin: '20px auto'
-                }}>
-                    {[5, 6, 7, 8, 9, 10].map(n => (
-                        <button
-                            key={n}
-                            onClick={() => setPracticeTarget(n)}
-                            style={{
-                                width: '60px',
-                                height: '60px',
-                                background: practiceTarget === n ? 'var(--color-primary)' : 'white',
-                                color: practiceTarget === n ? 'white' : 'var(--color-text)',
-                                borderRadius: '12px',
-                                fontWeight: '900',
-                                fontSize: '1.5rem',
-                                border: '2px solid var(--color-text-light)',
-                                cursor: 'pointer',
-                                transition: 'all 0.2s ease',
-                                transform: practiceTarget === n ? 'scale(1.1)' : 'scale(1)'
-                            }}
-                        >
-                            {n}
-                        </button>
+                {/* Number Selectors */}
+                <div className={styles.numberGrid}>
+                    {/* Range 3-20 (18 numbers) - Perfect 6x3 Grid */}
+                    {Array.from({ length: 18 }, (_, i) => i + 3).map(n => (
+                        <NumberButton key={n} num={n} target={practiceTarget} setTarget={setPracticeTarget} />
                     ))}
                 </div>
             </div>
         </div>
     );
 };
+
+const NumberButton = ({ num, target, setTarget }) => (
+    <button
+        onClick={() => setTarget(num)}
+        className={`${styles.numberButton} ${target === num ? styles.active : ''}`}
+    >
+        {num}
+    </button>
+);
 
 export default HomeScreen;

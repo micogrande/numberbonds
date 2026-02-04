@@ -46,11 +46,12 @@ const BondDiagram = ({ bond, userInput, feedback }) => {
                     const content = isMissing ? (userInput || '?') : val;
                     const isFilled = isMissing && userInput.length > 0;
                     const isCorrection = isMissing && feedback === 'correction';
+                    const isSuccess = isMissing && feedback === 'success';
 
                     return (
                         <motion.div
                             key={idx}
-                            className={`${styles.circle} ${isMissing ? styles.missing : ''} ${isFilled ? styles.filled : ''} ${isCorrection ? styles.correction : ''}`}
+                            className={`${styles.circle} ${isMissing ? styles.missing : ''} ${isFilled ? styles.filled : ''} ${isCorrection ? styles.correction : ''} ${isSuccess ? styles.success : ''}`}
                             variants={isMissing ? shakeVariants : circleVariants}
                             initial={isMissing ? "idle" : "hidden"}
                             animate={isMissing ? feedback : "visible"}
