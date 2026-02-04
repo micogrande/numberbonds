@@ -37,6 +37,7 @@ The goal is to build a "Number Bonds" (Part-Part-Whole) practice app.
 - **Responsive**: scaling fonts (clamp) and flexible layouts.
 - **Code Quality**: Functional components, clear prop types (or TS interfaces), simple hooks.
 - **NEVER Replace with Comments**: When using `replace_file_content`, NEVER use placeholders like `// ... existing code ...`. You MUST provide the full content for the replaced block, or use small targeted replacements. The tool writes EXACTLY what you send.
+- **Precise Context Matching**: When replacing code, ensure you include the ENTIRE opening line (e.g., selector, function definition) if you are replacing the block content, OR match inside the block. Do not accidentally replace the opening line with just property values.
 
 ## Roadmap
 1.  **Setup**: Initialize React+Vite project.

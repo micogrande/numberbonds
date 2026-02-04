@@ -25,12 +25,17 @@
 .menuButtons {
     display: flex;
     flex-direction: column;
+    align-items: center;
+    /* Center children horizontally */
     gap: var(--spacing-md);
     width: 100%;
-    max-width: 300px;
+    max-width: 450px;
+    /* Increased to fit the 6-col grid */
 }
 
 .primaryButton {
+    width: 100%;
+    /* Fill the container */
     background: var(--color-primary);
     color: white;
     padding: var(--spacing-md) var(--spacing-lg);
@@ -39,6 +44,8 @@
     font-weight: 700;
     box-shadow: var(--shadow-md);
     transition: transform 0.1s;
+    border: none;
+    cursor: pointer;
 }
 
 .primaryButton:active {
