@@ -26,6 +26,8 @@ function App() {
                     score={game.score}
                     total={game.total}
                     finalTime={game.finalTime}
+                    isNewRecord={game.isNewRecord}
+                    previousBest={game.previousBest}
                     onRestart={() => game.startGame(game.MODES.MENU)}
                 />
             )}

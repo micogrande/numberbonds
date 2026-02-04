@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { generateDeck, generateMixedDeck } from '../engines/BondEngine';
+import { saveScore } from '../storage/ScoreStorage';
 import confetti from 'canvas-confetti';
 
 const MODES = {
@@ -27,6 +28,10 @@ export const useGame = () => {
     const [startTime, setStartTime] = useState(null);
     const [finalTime, setFinalTime] = useState(0);
 
+    // High Score State
+    const [isNewRecord, setIsNewRecord] = useState(false);
+    const [previousBest, setPreviousBest] = useState(null);
+
     const startGame = (selectedMode, targetVal = 10) => {
         setMode(selectedMode);
         setTarget(targetVal);
@@ -47,6 +52,8 @@ export const useGame = () => {
         setFeedback('idle');
         setStartTime(Date.now());
         setFinalTime(0);
+        setIsNewRecord(false);
+        setPreviousBest(null);
     };
 
     const nextProblem = useCallback(() => {
@@ -60,10 +67,17 @@ export const useGame = () => {
             setCurrentBond(deck[nextIdx]);
         } else {
             // Session Complete
-            setFinalTime(Date.now() - startTime);
+            const time = Date.now() - startTime;
+            setFinalTime(time);
+
+            // Save Score
+            const { isNewRecord: newRec, previousBest: prev } = saveScore(mode, target, score, time);
+            setIsNewRecord(newRec);
+            setPreviousBest(prev);
+
             setMode(MODES.SUMMARY);
         }
-    }, [currentIndex, deck, startTime]);
+    }, [currentIndex, deck, startTime, mode, target, score]);
 
     const submitInput = (val) => {
         if (feedback !== 'idle') return;
@@ -133,6 +147,8 @@ export const useGame = () => {
         handleKeypad,
         MODES,
         startTime,
-        finalTime
+        finalTime,
+        isNewRecord,
+        previousBest
     };
 };
