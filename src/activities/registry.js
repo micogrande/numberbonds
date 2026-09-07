@@ -59,6 +59,23 @@ export function getActivityBySlug(slug) {
 }
 
 /**
+ * One activity by its stable id, or null.
+ *
+ * The slug is what a URL carries; the id is what *storage* carries, because it
+ * is half of a high-score key and half of a daily-goal task. Both lookups exist
+ * for that reason and neither is a synonym for the other — a slug may be renamed
+ * for readability, an id never may.
+ *
+ * Null is a real answer: a stored id can outlive the activity it named.
+ *
+ * @param {string} id
+ * @returns {import('./manifestSchema').ActivityManifest|null}
+ */
+export function getActivityById(id) {
+  return ACTIVITIES.find((activity) => activity.id === id) ?? null
+}
+
+/**
  * One option of one activity, or null.
  *
  * Null is a real answer and every caller has to handle it: an option id arrives
