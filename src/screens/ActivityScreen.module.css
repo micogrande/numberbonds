@@ -1,0 +1,235 @@
+/* The option picker.
+   ─────────────────────────────────────────────────────────────────────────
+   >>> THE 3–20 TARGET GRID BELOW IS AN OWNER DECISION (PLAN 9.2). The rules
+   >>> for .picker, .numberGrid and .numberButton are the ones the app has been
+   >>> shipping: 50px buttons, six columns, 8px gaps, in a 450px-max column.
+   >>> "It is the one piece of evidence in this document that comes from real
+   >>> hands on a real device, and it outranks every guideline."
+   >>>
+   >>> The garden pass restyled its COLOURS and nothing else. Every number that
+   >>> can affect its size or layout is byte-identical to what she has been
+   >>> using: width 50px, height 50px, six columns, 8px gap, 12px radius,
+   >>> 1.25rem type, 2px border, scale(1.1) on the selected one, and the same
+   >>> 450px column it has always sat in.
+   >>>
+   >>> That last one is why there is no clamp() on .numberButton's font-size,
+   >>> the only hardcoded rem this pass deliberately left standing: a fluid
+   >>> scale tops out at 1.625rem, and 26px digits in a 50px box is a resize by
+   >>> another name. Never resize it, never trim the range, never restructure
+   >>> it into levels.
+   ─────────────────────────────────────────────────────────────────────────
+
+   Colour, measured:
+     title / numbers   --color-text on --color-surface   9.20:1
+     subtitle          --color-text-light on --color-bg  5.15:1
+     selected number   white on --color-primary          5.10:1
+     start button      white on --color-primary          5.10:1 */
+
+.screen {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg);
+    padding: max(var(--spacing-sm), var(--safe-top)) var(--spacing-md)
+        max(var(--spacing-md), var(--safe-bottom));
+}
+
+.body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 0;
+}
+
+.title {
+    font-family: var(--font-display);
+    font-size: var(--fs-h2);
+    font-weight: 800;
+    line-height: 1.05;
+    color: var(--color-text);
+    text-align: center;
+}
+
+.subtitle {
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    color: var(--color-text-light);
+    text-align: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+/* Was .menuButtons. 450px — unchanged, owner decision. */
+.picker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-md);
+    width: 100%;
+    max-width: 450px;
+}
+
+/* The label is the option's own — "Bonds to 10" — so the button says exactly
+   what pressing it starts. */
+.startButton {
+    width: 100%;
+    background: var(--color-primary);
+    color: white;
+    padding: var(--spacing-md) var(--spacing-lg);
+    border: none;
+    border-radius: var(--radius-card);
+
+    font-family: var(--font-display);
+    font-size: var(--fs-card);
+    font-weight: 800;
+
+    --slab: var(--sage-700);
+    box-shadow: var(--shadow-slab);
+    transition: transform 170ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 170ms ease-out,
+        background-color 120ms ease-out;
+}
+
+.startButton:active {
+    transform: translateY(6px);
+    box-shadow: var(--shadow-press);
+    transition-duration: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .startButton {
+        transition: box-shadow 0.01ms, background-color 0.01ms;
+    }
+
+    .startButton:active {
+        transform: none;
+        background: var(--color-primary-press);
+        box-shadow: var(--shadow-press);
+    }
+}
+
+/* ─── the 3–20 grid · geometry frozen, colours only ─────────────────────── */
+
+.numberGrid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--spacing-sm);
+    margin: var(--spacing-lg) auto;
+    width: 100%;
+    max-width: fit-content;
+}
+
+.numberButton {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    font-weight: 900;
+    /* Nunito, because these are digits (PLAN 3.2). 1.25rem, frozen — see the
+       block at the top of this file. */
+    font-family: var(--font-body);
+    font-size: 1.25rem;
+    border: 2px solid var(--sage-400);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-surface);
+    color: var(--color-text);
+}
+
+.numberButton.active {
+    background: var(--color-primary);
+    color: white;
+    transform: scale(1.1);
+    border-color: var(--color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .numberButton {
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+    }
+
+    /* The 1.1 scale IS the selection state here, not decoration — it is how
+       she can see which number she picked. It stays under reduced motion,
+       because removing it would remove the information, not the motion. What
+       goes is the animated travel into it. */
+}
+
+/* The other picker shape a manifest can ask for: a column of full-width
+   buttons for an activity with three or four named levels. */
+.optionList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    width: 100%;
+}
+
+.optionRow {
+    width: 100%;
+    min-height: 56px;
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--sage-400);
+    background: var(--color-surface);
+    color: var(--color-text);
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    font-weight: 700;
+    transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.optionRow.active {
+    background: var(--color-primary);
+    border-color: var(--color-primary);
+    color: white;
+}
+
+/* ─── two-line chips ──────────────────────────────────────────────────────
+   PLAN 3.7: roman numerals is "three chips reading X, L, C with 'up to 10 /
+   50 / 100' beneath". An option supplies `caption` and the list becomes a row
+   of chips instead of a column of sentences. Nothing here touches the 3-20
+   grid above, which is an owner decision and is not restyled by this rule or
+   any other (PLAN 9.2). */
+
+.optionList.chipRow {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: var(--spacing-md);
+}
+
+.chip {
+    /* Grows to share the row, never below a comfortable thumb. The 88px floor
+       is the same one the answer buttons use (PLAN 4.4). */
+    flex: 1 1 96px;
+    width: auto;
+    min-height: 88px;
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-card);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+}
+
+.chipShort {
+    /* A big glyph — X, L, C — so it is set in the display face. */
+    font-family: var(--font-display);
+    font-size: var(--fs-h2);
+    font-weight: 800;
+    line-height: 1;
+}
+
+.chipCaption {
+    /* The word under the glyph. She reads, so this is doing real work — it is
+       not decoration and it is never the only thing said (the button's
+       aria-label is the option's full sentence). */
+    font-family: var(--font-body);
+    font-size: var(--fs-small);
+    font-weight: 700;
+    line-height: 1.1;
+}

@@ -1,0 +1,131 @@
+/* The room a category opens into. (PLAN 3.7)
+
+   A full screen, not an accordion and not a bottom sheet: the page cannot
+   scroll, so revealing three activities inside the home grid would shove the
+   other cards off the bottom and slide the card she touched away from her
+   finger.
+
+   Every row is a slab card, the same object as a home-screen category card and
+   pressed the same way, so "a thing you can press" looks identical everywhere
+   in the app. Colour, measured:
+     title     --color-text on --color-bg        8.82:1
+     row title --color-text on --color-surface   9.20:1
+     subtitle  --color-text-light on --surface   5.37:1 */
+
+.screen {
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--color-bg);
+    padding: max(var(--spacing-sm), var(--safe-top)) var(--spacing-md)
+        max(var(--spacing-md), var(--safe-bottom));
+}
+
+.title {
+    font-family: var(--font-display);
+    font-size: var(--fs-display);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--color-text);
+    text-align: center;
+    text-transform: lowercase;
+    margin-block: var(--spacing-sm) var(--spacing-lg);
+}
+
+.list {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    width: 100%;
+    max-width: 480px;
+    margin-inline: auto;
+    min-height: 0;
+    /* The bottom of a screen is where children mis-tap, so the last row stops
+       short of the edge rather than sitting on it (PLAN 3.3). */
+    padding-bottom: var(--spacing-xl);
+}
+
+/* One row per activity, and the whole row is the target. */
+.activity {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    text-align: left;
+
+    padding: var(--spacing-lg) var(--spacing-lg);
+    /* ~190px of row on a 390x844 phone (PLAN 3.7), but as a floor and a share
+       of the column rather than a fixed height — three activities land here
+       when arithmetic ships and the page still may not scroll. */
+    min-height: 96px;
+    flex: 0 1 auto;
+
+    background: var(--color-surface);
+    border-radius: var(--radius-card);
+    --slab: var(--sage-700);
+    box-shadow: var(--shadow-slab);
+
+    transition: transform 170ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 170ms ease-out,
+        background-color 120ms ease-out;
+}
+
+/* The depress is pure CSS, on the pointerdown frame. The release above is the
+   only part that travels. */
+.activity:active {
+    transform: translateY(6px);
+    box-shadow: var(--shadow-press);
+    transition-duration: 0s;
+}
+
+/* The same four pencil lines as a category card, so the two read as one family
+   of object (PLAN 3.4). */
+.activity::after {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border: 1.5px solid var(--color-text);
+    border-radius: calc(var(--radius-card) - 7px);
+    opacity: 0.18;
+    transform: rotate(-0.3deg);
+    pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .activity {
+        transition: box-shadow 0.01ms, background-color 0.01ms;
+    }
+
+    .activity:active {
+        transform: none;
+        background: var(--sage-100);
+        box-shadow: var(--shadow-press);
+    }
+}
+
+.activityTitle {
+    font-family: var(--font-display);
+    font-size: var(--fs-card);
+    font-weight: 800;
+    line-height: 1.1;
+    color: var(--color-text);
+}
+
+.activitySubtitle {
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    font-weight: 400;
+    line-height: 1.25;
+    color: var(--color-text-light);
+}
+
+.empty {
+    text-align: center;
+    color: var(--color-text-light);
+    font-size: var(--fs-body);
+}

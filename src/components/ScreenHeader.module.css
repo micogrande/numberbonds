@@ -1,0 +1,106 @@
+/* The bar across the top of every non-home screen.
+
+   The one way home is the whole point of this file: PLAN 3.7 asks for "one 72px
+   round button, top-left, in the identical position on every non-home screen
+   […] One way home, always the same pixel. That single consistent exit is worth
+   more than any navigational elegance."
+
+   So the button is 72px and it is FIRST in a flex row with no leading padding
+   that varies by screen — every screen that mounts this header puts it in the
+   same place by construction, rather than by four files agreeing.
+
+   It is drawn as a wooden disc: --sand face, --bark ring, and the same slab
+   press every other button in the garden uses. PLAN 3.7 wants a little garden
+   gate; the icon inside is still lucide's Home, because this file is CSS and
+   the icon is in ScreenHeader.jsx. See the handoff note — swapping the glyph
+   for a drawn gate is one import and one element, and nothing here changes. */
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--spacing-sm);
+    width: 100%;
+    padding: var(--spacing-xs) 0;
+    flex: 0 0 auto;
+}
+
+.homeButton {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+
+    /* 72px (PLAN 3.7), floored at the 44px house minimum on a very short
+       landscape viewport where a fixed 72 would eat the play area. */
+    width: clamp(56px, 9vh, 72px);
+    height: clamp(56px, 9vh, 72px);
+
+    background: var(--sand);
+    border: 3px solid var(--bark);
+    border-radius: var(--radius-round);
+    /* lucide draws in currentColor, so the icon inherits this. --color-text on
+       --sand measures 7.49:1. */
+    color: var(--color-text);
+
+    --slab: var(--bark);
+    box-shadow: var(--shadow-slab);
+
+    transition: transform 170ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 170ms ease-out,
+        background-color 120ms ease-out;
+}
+
+/* The icon was drawn at 24px into a 44px button. In a 72px one it needs to
+   grow with it, and the size prop is in the JSX — so it is scaled here. */
+.homeButton svg {
+    width: 55%;
+    height: 55%;
+}
+
+/* The depress is pure CSS, so there is no JS latency. A response later than
+   ~100ms reads to a six-year-old as "it didn't work" and earns a second tap. */
+.homeButton:active {
+    transform: translateY(5px);
+    box-shadow: var(--shadow-press);
+    transition-duration: 0s;
+}
+
+/* Feedback never disappears under reduced motion; only motion does. The travel
+   goes, the shadow collapse and the colour flood stay. */
+@media (prefers-reduced-motion: reduce) {
+    .homeButton {
+        transition: box-shadow 0.01ms, background-color 0.01ms;
+    }
+
+    .homeButton:active {
+        transform: none;
+        background-color: var(--butter-200);
+        box-shadow: var(--shadow-press);
+    }
+}
+
+.progress {
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    font-weight: 700;
+    /* 5.15:1 on --color-bg */
+    color: var(--color-text-light);
+}
+
+.status {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
+/* The live score. PLAN 9.1 is an owner decision: it stays exactly as it is, and
+   this pass changes its colour and nothing else. --color-warning measures
+   4.98:1 on the page — it was #f59e0b on #fdfbf7 before, which measures 2.08:1
+   and was the worst text/background pair the app was shipping. */
+.score {
+    font-family: var(--font-body);
+    font-size: var(--fs-body);
+    font-weight: 800;
+    color: var(--color-warning);
+}

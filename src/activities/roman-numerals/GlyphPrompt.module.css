@@ -1,0 +1,74 @@
+/*
+  Roman numerals — the numeral itself. (PLAN 4.4)
+
+  "Numeral rendered uppercase in a serif face with letter-spacing >= 0.08em so
+  III is countable."
+
+  Three requirements, and every one of them is about a six-year-old counting
+  strokes rather than about taste:
+
+    serif        the serifs are a fence between the strokes of III. In a
+                 sans-serif they are three identical bars at one pitch, which is
+                 a picket fence, and she counts it wrong.
+    uppercase    a Roman numeral is not a word. Lowercase `l` is a 1, `c` and `x`
+                 lose their shape at speed, and `i` grows a dot she has to ignore.
+    tracking     0.12em, comfortably over the 0.08em floor. This is the number
+                 that makes III readable as three things instead of one shape.
+
+  There is no colour change and no animation on a graded answer in this file: the
+  grading is drawn on the buttons (input/ChoiceInput.module.css), and the numeral
+  has to stay still and legible while she checks it against the one that lit up.
+*/
+
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    /* The numeral is the subject of the screen; the buttons come under it. This
+       is the same breathing room the bond diagram takes. */
+    padding: var(--spacing-md) var(--spacing-sm);
+}
+
+.glyph {
+    /* The one place in the app that is not Nunito. PLAN 3.2 keeps Nunito for all
+       maths DIGITS — its 1/7/4 are unambiguous at speed — and this is not a
+       digit: it is letters being counted, which is the one job a serif does
+       better. The stack ends in the generic `serif` so a device with none of the
+       named faces still gets one. */
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia,
+        'Times New Roman', serif;
+    font-weight: 700;
+    text-transform: uppercase;
+
+    /* >= 0.08em (PLAN 4.4). Named once so the recentring below cannot drift. */
+    --glyph-tracking: 0.12em;
+    letter-spacing: var(--glyph-tracking);
+
+    /* Divided by the length the component measured, so `X` and `LXXXVIII` come
+       out about the same width on screen. Without it a one-letter numeral is
+       either lost or an eight-letter one runs off the side of a 390px phone —
+       and a numeral that is visibly longer than the others is a clue she can use
+       without reading it. The floor keeps the longest numeral legible; the
+       ceiling stops a bare `X` filling a tablet. */
+    font-size: clamp(2.75rem, calc(84vw / var(--glyph-length, 3)), 6rem);
+    line-height: 1.1;
+
+    color: var(--color-text);
+
+    /* One word, always. It is sized to fit rather than allowed to wrap: a
+       numeral broken across two lines is a different numeral. */
+    white-space: nowrap;
+    max-width: 100%;
+
+    /* letter-spacing puts its gap AFTER the last letter too, so a centred
+       numeral sits half a gap to the left of centre. Giving that gap back on the
+       leading edge cancels it exactly (the box is centred, so a margin of one
+       gap moves the ink by half of one). */
+    margin-inline-start: var(--glyph-tracking);
+
+    /* She taps four buttons in a row underneath this; a stray long-press on the
+       numeral should not pop up a selection handle. */
+    user-select: none;
+    -webkit-user-select: none;
+}

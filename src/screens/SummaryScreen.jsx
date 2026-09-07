@@ -1,69 +1,142 @@
 import React from 'react';
 import styles from './Summary.module.css';
-import confetti from 'canvas-confetti';
+import ScreenHeader from '../components/ScreenHeader';
+import { celebrateSession } from '../feedback/celebrate';
+import { formatTime } from '../lib/time';
 
-const formatTime = (ms) => {
-    const seconds = Math.floor(ms / 1000);
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-};
+/**
+ * The result of a session, on its own route (PLAN 2.5).
+ *
+ * Two ways off it, and they are different things now that routing exists:
+ * `onRestart` deals a new deck of the same option, and the gate top-left goes
+ * home like it does on every other non-home screen. Before this step there was
+ * one button labelled "Play Again" that went to the menu.
+ *
+ * It takes the finished session as ONE object rather than as five props, for the
+ * same reason the play host holds a `reported` ref: the object's identity is the
+ * only thing that distinguishes this finished game from the next one. Two
+ * sessions can easily agree on every value in it.
+ */
 
-const SummaryScreen = ({ score, total, finalTime, isNewRecord, previousBest, onRestart }) => {
-    // Launch confetti on mount if score is perfect
+/**
+ * The denominator for a stored personal best.
+ *
+ * PLAN 5 lists "no `total` stored, so *Previous Best: 10* has no denominator" as
+ * a bug, and PLAN 2.6 stores `total` precisely so this line can read
+ * "Previous best: 10 / 18". Three shapes reach here and all three have to read
+ * as a real fraction:
+ *
+ *   - a record written by `scores.js`, which stores the deck size it was out of
+ *   - a record the migration rescued, whose `total` was reconstructed from the
+ *     old recipe (`storage/migrations.js`) because the old store kept none
+ *   - a record from a shape older still, with no `total` at all — a store
+ *     written before either of those, or hand-edited
+ *
+ * The last one falls back to THIS session's deck size, and that is sound rather
+ * than a guess: a best is filed under `${id}::${option}::v${version}`, and PLAN
+ * 2.2 bumps `version` exactly when the recipe changes enough to make old scores
+ * incomparable. A record sharing this key was therefore scored out of the deck
+ * she has just played. Only if that is missing too does the fraction collapse
+ * back to a bare number, because "4 / 0" is worse than saying less.
+ *
+ * @param {{ total?: number }|null} previousBest
+ * @param {number} total  This session's deck size.
+ * @returns {number|null}
+ */
+function previousDenominator(previousBest, total) {
+    const stored = previousBest?.total;
+    if (Number.isFinite(stored) && stored > 0) return stored;
+
+    return Number.isFinite(total) && total > 0 ? total : null;
+}
+
+/**
+ * @param {Object} props
+ * @param {{ score: number, total: number, wallMs: number, isNewRecord: boolean,
+ *           previousBest: Object|null }} props.result  One finished session.
+ * @param {() => void} props.onRestart
+ * @param {() => void} props.onHome
+ */
+const SummaryScreen = ({ result, onRestart, onHome }) => {
+    const { score, total, wallMs, isNewRecord, previousBest } = result;
+
+    /**
+     * Confetti, once per finished session.
+     *
+     * Guarded on the IDENTITY of the result, which is the same discipline as the
+     * session's epoch guard in `useSession` and the play host's `reported` ref.
+     * Without it React 19's StrictMode mounts this screen, tears the effect down
+     * and mounts it again, so every dev session she is shown got two hundred
+     * particles twice — and any re-render that changed the dependencies would do
+     * it again in production.
+     *
+     * A ref rather than state: nothing renders differently because of it, and a
+     * ref survives StrictMode's simulated remount, which is the whole point.
+     */
+    const celebrated = React.useRef(null);
+
     React.useEffect(() => {
-        if (score === total || isNewRecord) {
-            confetti({
-                particleCount: 200,
-                spread: 100,
-                origin: { y: 0.6 }
-            });
-        }
-    }, [score, total, isNewRecord]);
+        if (celebrated.current === result) return;
+        celebrated.current = result;
+
+        if (score === total || isNewRecord) celebrateSession();
+    }, [result, score, total, isNewRecord]);
+
+    const previousTotal = previousDenominator(previousBest, total);
 
     return (
-        <div className={styles.summaryContainer}>
-            <h2 className={styles.summaryTitle}>Session Complete!</h2>
+        <div className={styles.screen}>
+            <ScreenHeader onBack={onHome} />
 
-            <div className={styles.summaryScore}>
-                {score} / {total}
-            </div>
+            <div className={styles.summaryContainer}>
+                <h2 className={styles.summaryTitle}>Session Complete!</h2>
 
-            <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '10px' }}>
-                Time: {formatTime(finalTime)}
-            </div>
-
-            {isNewRecord && (
-                <div style={{
-                    background: '#dcfce7',
-                    color: '#166534',
-                    padding: '8px 16px',
-                    borderRadius: '20px',
-                    fontWeight: 700,
-                    marginBottom: '15px',
-                    display: 'inline-block'
-                }}>
-                    🏆 New Personal Best!
+                <div className={styles.summaryScore}>
+                    {score} / {total}
                 </div>
-            )}
 
-            {!isNewRecord && previousBest && (
-                <div style={{
-                    color: 'var(--color-text-light)',
-                    fontSize: '1rem',
-                    marginBottom: '15px'
-                }}>
-                    Previous Best: {previousBest.score} in {formatTime(previousBest.time)}
+                <div style={{ fontSize: '1.5rem', fontWeight: 'bold', color: 'var(--color-primary)', marginBottom: '10px' }}>
+                    Time: {formatTime(wallMs)}
                 </div>
-            )}
 
-            <p className={styles.summaryDetails}>
-                {score === total ? 'Perfect Score! 🌟' : 'Great Practice! Keep it up!'}
-            </p>
+                {isNewRecord && (
+                    <div style={{
+                        background: '#dcfce7',
+                        color: '#166534',
+                        padding: '8px 16px',
+                        borderRadius: '20px',
+                        fontWeight: 700,
+                        marginBottom: '15px',
+                        display: 'inline-block'
+                    }}>
+                        🏆 New Personal Best!
+                    </div>
+                )}
 
-            <button className={styles.restartButton} onClick={onRestart}>
-                Play Again
-            </button>
+                {!isNewRecord && previousBest && (
+                    <div style={{
+                        color: 'var(--color-text-light)',
+                        fontSize: '1rem',
+                        marginBottom: '15px'
+                    }}>
+                        {/* A fraction, never a bare number: "4" above "3 / 8" is
+                            not a score she can compare (PLAN 2.6). The time is
+                            beside it because wall-clock time is what personal
+                            bests rank on. */}
+                        Previous best: {previousBest.score}
+                        {previousTotal === null ? '' : ` / ${previousTotal}`} in{' '}
+                        {formatTime(previousBest.wallMs)}
+                    </div>
+                )}
+
+                <p className={styles.summaryDetails}>
+                    {score === total ? 'Perfect Score! 🌟' : 'Great Practice! Keep it up!'}
+                </p>
+
+                <button className={styles.restartButton} onClick={onRestart}>
+                    Play Again
+                </button>
+            </div>
         </div>
     );
 };

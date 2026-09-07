@@ -1,39 +1,209 @@
-/* Kid-Friendly Color Palette */
-:root {
-  /* Colors */
-  --color-primary: #6366f1; /* Indigo 500 */
-  --color-primary-hover: #4f46e5;
-  --color-secondary: #ec4899; /* Pink 500 */
-  
-  --color-success: #22c55e; /* Green 500 */
-  --color-warning: #f59e0b; /* Amber 500 */
-  --color-error: #ef4444; /* Red 500 */
-  
-  --color-bg: #fdfbf7; /* Warm off-white */
-  --color-surface: #ffffff;
-  --color-text: #1e293b; /* Slate 800 */
-  --color-text-light: #64748b; /* Slate 500 */
+/* ═══════════════════════════════════════════════════════════════════════════
+   Amelia's Garden — tokens.  (PLAN 3.1)
 
-  /* Spacing */
+   Two tiers: a raw ramp underneath, semantic names on top. The ramp is what
+   makes "turn the whole thing up if she finds it boring" a ten-line change
+   rather than a redesign — retune the ramp and every screen follows, because
+   nothing outside this file names a colour.
+
+   Every ratio written below was MEASURED (sRGB relative luminance, WCAG 2.x)
+   during the garden pass, not copied. Three numbers in the source material did
+   not survive that check and are corrected in place, each marked [was …].
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ─── ink law ──────────────────────────────────────────────────────────
+     Text is ONLY ever --color-text, --color-text-light, or white on a
+     -press/-deep tone. The 400-tints are ILLUSTRATION ONLY.
+     Measured fails, do not use for text:
+       --sage-400  #A8C0A0  1.85:1 on bg      --blush-400 #E9A6BC  1.86:1 on bg
+     ────────────────────────────────────────────────────────────────────
+     [was 2.1:1 for blush-400 — measures 1.86:1. It fails either way, so the
+     law is unchanged; the number was wrong and is corrected so nobody later
+     "rescues" a tint by trusting it.]
+
+     Two more corrections, both in PLAN 3.6, both about the sleeping label:
+       - full moss ink on the cream page measures 8.82:1  [was 7.71:1, which is
+         that ink on --sleep-surface — a leftover from when a sleeping slot had
+         a face. It has none now (PLAN 3.6), so the page is the backdrop.]
+       - greying it to --color-text-light measures 5.15:1, which PASSES AA
+         [was 3.73:1]. It stays full ink anyway, by owner decision and because
+         3.12:1 is what the shipped `.sleepingLabel { opacity: .75 }` actually
+         measured — THAT is the real fail this pass removed.
+     ──────────────────────────────────────────────────────────────────── */
+
+  /* raw ramp */
+  --cream-100: #FBF8F1;
+  --cream-200: #FFFDF8;
+  --sage-100: #EEF3E7;
+  --sage-200: #E3EDD9;
+  --sage-400: #A8C0A0;
+  --sage-500: #5B7553;
+  --sage-600: #4A6244;
+  --sage-700: #3C5137;
+  --blush-100: #FDF0F2;
+  --blush-200: #F9DCE3;
+  --blush-400: #E9A6BC;
+  --blush-500: #B8496B;
+  --blush-700: #97304F;
+  --butter-100: #FDF6E4;
+  --butter-200: #FBEBC8;
+  --butter-400: #F6D98A;
+  --sand: #F2E4D4;
+  --bark: #8A6A4F;
+  --sleep-surface: #EDE9DF;
+  --sleep-edge: #DCD5C6;
+
+  /* semantic */
+  --color-bg: var(--cream-100);
+  --color-surface: var(--cream-200);
+  --color-text: #3E4A3A;
+  /* 8.82:1 on bg · 9.20:1 on surface */
+  --color-text-light: #616D5B;
+  /* 5.15:1 on bg · 5.37:1 on surface — AA at every size */
+  --color-primary: var(--sage-500);
+  /* white on it: 5.10:1 */
+  --color-primary-hover: var(--sage-600);
+  /* white on it: 6.73:1 */
+  --color-primary-press: var(--sage-700);
+  /* white on it: 8.66:1 */
+  --color-secondary: var(--blush-500);
+  /* white on it: 5.00:1 */
+  --color-secondary-press: var(--blush-700);
+  /* white on it: 7.36:1 */
+  --color-success: #2E7D4F;
+  /* white on it: 5.05:1 */
+  --color-success-press: #22603C;
+  /* white on it: 7.48:1 */
+  --color-success-soft: #EAF5EE;
+  /* text on it: 8.37:1 — replaces hardcoded #f0fdf4 */
+  --color-warning: #A8551A;
+  /* 4.98:1 on bg */
+  --color-warning-soft: #FBF1DF;
+  /* text on it: 8.35:1 · warning on it: 4.71:1 — replaces hardcoded #fffbeb */
+  --color-error: #C0455A;
+  /* ripe fruit, not alarm red. white on it: 4.95:1 */
+  --color-error-press: #9C3348;
+  /* white on it: 7.05:1 */
+
+  /* reserved for the sleeping categories — the unopened bud in each slot */
+  --garden-sky: #DDEAF0;
+  --garden-lilac: #E7E0EF;
+  --garden-peach: #FBEEE0;
+
+  /* type — fluid, no magic numbers */
+  --fs-display: clamp(2.25rem, 5vw + 1rem, 3.25rem);
+  --fs-h2: clamp(1.5rem, 3vw + 0.7rem, 2.125rem);
+  --fs-card: clamp(1.1875rem, 2.5vw + 0.6rem, 1.625rem);
+  --fs-body: clamp(1.0625rem, 1.5vw + 0.7rem, 1.25rem);
+  --fs-numeral: clamp(2.75rem, 10vw + 0.5rem, 5rem);
+  /* Two steps below --fs-body, for a caption or a sleeping slot's label on a
+     small phone. Not in PLAN 3.1's block; added because the alternative was a
+     hardcoded rem, which is the thing this scale exists to abolish. */
+  --fs-small: clamp(0.9375rem, 1vw + 0.65rem, 1.0625rem);
+
+  /* Baloo 2 (700/800) for display and category labels — thick, closed, high
+     x-height, survives being set enormous. Nunito for body and ALL maths
+     digits: its 1/7/4 are unambiguous at speed and the keypad, bond diagram and
+     timer are tuned to its metrics (PLAN 3.2). Never set a numeral in Baloo. */
+  --font-display: 'Baloo 2', 'Nunito', system-ui, sans-serif;
+  --font-body: 'Nunito', system-ui, sans-serif;
+
+  /* the slab — this is what makes a card read as a button.
+     The two shadows that use it are NOT declared here; see the `*` rule below,
+     and read the note there before moving them back. */
+  --slab: var(--sage-700);
+  /* shadows are green-tinted, never black — black on cream goes grey and kills it */
+
+  /* The two soft shadows that predate the slab. Retinted green for the same
+     reason, and kept rather than pruned: --shadow-md is referenced by eight
+     rules, two of them in files this pass does not own (input/ChoiceInput,
+     activities/number-bonds/BondPrompt), and --shadow-sm by ChoiceInput's
+     :active. PLAN 3.1's prune list was written before either existed. */
+  --shadow-sm: 0 1px 2px rgba(90, 110, 84, .12);
+  --shadow-md: 0 4px 10px -4px rgba(90, 110, 84, .22);
+
+  --radius-card: 28px;
+  --radius-pebble: 44% 56% 52% 48% / 50% 46% 54% 50%;
+  --radius-lg: 24px;
+  --radius-round: 9999px;
+
+  /* Spacing. Not in PLAN 3.1's block, but it is the layout grammar every
+     module already speaks and there is no reason to churn it. */
   --spacing-xs: 4px;
   --spacing-sm: 8px;
   --spacing-md: 16px;
   --spacing-lg: 24px;
   --spacing-xl: 32px;
 
-  /* Border Radius */
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
-  --radius-round: 9999px;
+  /* env() carries its own 0px fallback: these are read inside max(), and a
+     browser without env() would make the whole max() invalid and drop the
+     padding with it. */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
 
-  /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-  --shadow-float: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-  
-  /* Typography */
-  --font-heading: 'Nunito', sans-serif;
-  --font-body: 'Nunito', sans-serif;
+  /* Every ambient (unprompted, decorative, infinite) animation reads this — one
+     property stops all of them at once, and touches no feedback animation.
+     Feedback is gated per-rule instead, so a shake becomes a pulse rather than
+     nothing at all.
+
+     It is necessary and not sufficient: a paused animation freezes at 0%, so
+     anything whose 0% is off-screen needs a resting position too. See the note
+     at the bottom of components/garden/Ambient.module.css. */
+  --ambient-play: running;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --ambient-play: paused;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE SLAB SHADOWS — and a correction to PLAN 3.1, verified in a browser.
+
+   PLAN says:
+
+     > `--slab` is overridden per category (`.catOceans { --slab: … }`) and the
+     > shadow re-resolves, because custom properties substitute at
+     > computed-value time. Shipping a new category is two properties, not a
+     > new rule.
+
+   The intent is right and it is what this app wants. The stated mechanism is
+   wrong, and I only found out by measuring: with `--shadow-slab` declared on
+   `:root`, an element that sets its own `--slab` gets the ROOT's slab colour in
+   its shadow. Measured on the back gate, which sets `--slab: var(--bark)`:
+
+     getComputedStyle(gate)['--slab']     "#8A6A4F"        (the override lands)
+     getComputedStyle(gate).boxShadow     "rgb(60, 81, 55) 0 6px 0 0, …"
+                                                           (sage-700 — it did NOT)
+
+   Why: a custom property's own `var()` references are substituted when THAT
+   PROPERTY is computed, on the element it is declared on. `--shadow-slab` is
+   computed once on `:root`, where `var(--slab)` is already sage-700, and what
+   inherits down the tree is the finished string. There is nothing left to
+   re-resolve by the time a card asks for it.
+
+   Declaring the two shadows on `*` is the fix: every element computes its own
+   copy against its own inherited `--slab`, so an override anywhere in the tree
+   works, and every consumer still writes plain `box-shadow: var(--shadow-slab)`
+   exactly as PLAN intends. Shipping a new category stays two properties.
+
+   Do not move these back into `:root`. The page will still look right — every
+   slab will simply be sage-700, and the per-category colours will be dead code
+   that nobody notices for a year.
+   ═══════════════════════════════════════════════════════════════════════════ */
+* {
+  --shadow-slab: 0 6px 0 0 var(--slab), 0 8px 16px -8px rgba(90, 110, 84, .28);
+  --shadow-press: 0 0 0 0 var(--slab), 0 2px 6px -3px rgba(90, 110, 84, .24);
+}
+
+/* ─── pruned by PLAN 3.1 ────────────────────────────────────────────────────
+   --radius-sm · --radius-md · --shadow-lg · --shadow-float · --font-heading
+   were defined here and referenced nowhere. They are gone.
+
+   --shadow-sm was on that list and is NOT pruned: input/ChoiceInput.module.css
+   picked it up after PLAN was written and this pass does not own that file.
+   Pruning it would have silently dropped a box-shadow on a live button, which
+   is a worse outcome than one surviving token.
+   ─────────────────────────────────────────────────────────────────────────── */

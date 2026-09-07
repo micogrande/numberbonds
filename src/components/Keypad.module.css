@@ -1,12 +1,38 @@
+/* The keypad. (PLAN 2.4)
+
+   Restyled into the garden, unchanged in size and layout: same 3-column grid,
+   same 240px column, same 8px gaps, same round keys on a 1:1 aspect ratio. She
+   uses this more than anything else in the app and the geometry works.
+
+   Colour, measured:
+     digits    --color-text on --color-surface   9.20:1
+     ENTER     white on --color-success          5.05:1  (was white on #22c55e,
+               which measures 2.28:1 — the enter key's label was effectively
+               unreadable in bright light)
+     DEL       white on --color-error            4.95:1  (was white on #ef4444,
+               3.76:1 — under AA)
+
+   The error colour is ripe fruit, not alarm red (house rule). DEL is not an
+   error, but it is the destructive key and it borrows that tone; nothing in the
+   app uses a true alarm red anywhere. */
+
 .keypad {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: var(--spacing-sm);
     width: 100%;
     max-width: 240px;
-    /* Small buttons */
     margin: 0 auto;
     padding: var(--spacing-sm);
+    transition: opacity 0.15s ease;
+}
+
+/* Between a graded answer and the next card the session refuses input. The keys
+   used to stay fully lit through it, so every tap in that second and a half was
+   a dead tap — which a six-year-old reads as a broken device, not as "wait".
+   Stepping back is honest, and it comes back on its own. */
+.keypad[data-disabled='true'] {
+    opacity: 0.55;
 }
 
 .key {
@@ -14,38 +40,73 @@
     border: none;
     border-radius: var(--radius-round);
     aspect-ratio: 1;
-    font-size: 1.25rem;
+    /* Nunito: these are digits, and PLAN 3.2 keeps every maths digit in the
+       face the bond diagram and the timer are already tuned to. */
+    font-family: var(--font-body);
+    font-size: var(--fs-card);
     font-weight: 700;
     color: var(--color-text);
-    box-shadow: var(--shadow-md);
-    transition: transform 0.1s, background-color 0.2s;
+
+    --slab: var(--sage-600);
+    box-shadow: 0 5px 0 0 var(--slab), 0 7px 14px -8px rgba(90, 110, 84, .28);
+
     display: flex;
     align-items: center;
     justify-content: center;
     width: 100%;
+
+    /* The RELEASE, with a little overshoot. */
+    transition: transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 150ms ease-out,
+        background-color 0.2s;
 }
 
-.key:active {
-    transform: scale(0.95);
-    background-color: var(--color-bg);
+/* The DEPRESS: pure CSS, on the pointerdown frame, no JS in the path. The key
+   she taps eighteen times a session is the last place a 100ms delay is
+   affordable. */
+.key:active:not(:disabled) {
+    transform: translateY(5px);
+    box-shadow: var(--shadow-press);
+    transition-duration: 0s;
+}
+
+.key:disabled {
+    cursor: default;
+}
+
+/* Feedback never disappears under reduced motion; only motion does. The travel
+   goes, the shadow collapse and every background-colour change below stay, so a
+   press is still answered in the frame it happens in. */
+@media (prefers-reduced-motion: reduce) {
+
+    .keypad,
+    .key {
+        transition: box-shadow 0.01ms, background-color 0.2s;
+    }
+
+    .key:active:not(:disabled) {
+        transform: none;
+        box-shadow: var(--shadow-press);
+        background-color: var(--sage-100);
+    }
 }
 
 .enter {
     background-color: var(--color-success);
     color: white;
+    --slab: var(--color-success-press);
 }
 
-.enter:active {
-    background-color: #15803d;
-    /* Darker green */
+.enter:active:not(:disabled) {
+    background-color: var(--color-success-press);
 }
 
 .delete {
     background-color: var(--color-error);
     color: white;
+    --slab: var(--color-error-press);
 }
 
-.delete:active {
-    background-color: #b91c1c;
-    /* Darker red */
+.delete:active:not(:disabled) {
+    background-color: var(--color-error-press);
 }

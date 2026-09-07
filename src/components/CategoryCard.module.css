@@ -1,0 +1,173 @@
+/* An awake category card. (PLAN 3.4)
+
+   The slab is the load-bearing part of this file. `--color-surface` #FFFDF8 on
+   `--color-bg` #FBF8F1 measures 1.04:1 — measured, not quoted — so a card
+   defined by a soft shadow alone disappears on a cheap panel or in sunlight.
+   Six solid pixels of `--slab` under it is an edge that survives both, and it
+   is also what makes the card read as a physical button rather than a panel.
+
+   Colours here: text is `--color-text` on `--color-surface`, 9.20:1. That is
+   the only text/background pair on this card and it is nowhere near the line. */
+
+.card {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    padding: var(--spacing-sm);
+
+    background: var(--color-surface);
+    border-radius: var(--radius-card);
+    color: var(--color-text);
+
+    /* --slab defaults to sage-700 in variables.css and is overridden per
+       category below. The shadow re-resolves on its own, because custom
+       properties substitute at computed-value time. */
+    box-shadow: var(--shadow-slab);
+
+    /* The RELEASE. Overshoots slightly, which is the spring, in CSS, on the
+       property framer-motion is deliberately not allowed to touch here. */
+    transition: transform 170ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        box-shadow 170ms ease-out,
+        background-color 120ms ease-out;
+}
+
+/* The DEPRESS. Pure CSS, so it lands on the pointerdown frame with zero JS
+   latency. `transition-duration: 0s` is what makes it instant while leaving the
+   release above free to travel — one property, both halves of the press. */
+.card:active {
+    transform: translateY(6px);
+    box-shadow: var(--shadow-press);
+    transition-duration: 0s;
+}
+
+/* The pencil outline: four lines that make a CSS rectangle read as hand-drawn
+   (PLAN 3.4). Inset 5px, 1.5px, 18% ink, and a third of a degree off square —
+   enough that the eye reads "drawn" and not enough to look broken. */
+.card::after {
+    content: '';
+    position: absolute;
+    inset: 5px;
+    border: 1.5px solid var(--color-text);
+    border-radius: calc(var(--radius-card) - 7px);
+    opacity: 0.18;
+    transform: rotate(0.35deg);
+    pointer-events: none;
+}
+
+.inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(2px, 1.2vh, 10px);
+    width: 100%;
+    min-height: 0;
+}
+
+/* The organic blob the illustration sits on. Three silhouettes, rotated, so no
+   two neighbours in the grid have the same outline (PLAN 3.4). */
+.pebble {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(58px, 15vh, 104px);
+    aspect-ratio: 1;
+    min-height: 0;
+    border-radius: var(--radius-pebble);
+    background: var(--sage-100);
+}
+
+.card[data-variant='0'] .pebble {
+    transform: rotate(-6deg);
+}
+
+.card[data-variant='1'] .pebble {
+    border-radius: 52% 48% 43% 57% / 47% 55% 45% 53%;
+    transform: rotate(5deg);
+}
+
+.card[data-variant='2'] .pebble {
+    border-radius: 48% 52% 57% 43% / 55% 44% 56% 45%;
+    transform: rotate(-2deg);
+}
+
+.motif {
+    width: 86%;
+    height: 86%;
+    display: block;
+    /* The drawing is rotated back against its pebble, so the blob tilts and the
+       strawberry does not. */
+    transform: rotate(calc(-1 * var(--motif-counter, 0deg)));
+}
+
+.card[data-variant='0'] .motif {
+    --motif-counter: -6deg;
+}
+
+.card[data-variant='1'] .motif {
+    --motif-counter: 5deg;
+}
+
+.card[data-variant='2'] .motif {
+    --motif-counter: -2deg;
+}
+
+/* Baloo 2, lowercase, not letter-spaced (PLAN 3.2). */
+.label {
+    font-family: var(--font-display);
+    font-size: var(--fs-card);
+    font-weight: 800;
+    line-height: 1.05;
+    text-align: center;
+    color: var(--color-text);
+    /* 9.20:1 on --color-surface. */
+}
+
+/* ─── per-category slab ─────────────────────────────────────────────────────
+   Two properties per category, never a new rule (PLAN 3.1). Only `numbers` is
+   awake today; the other five are here so that waking one is a token change in
+   `categories.js` and nothing else. */
+
+.card[data-category='numbers'] {
+    --slab: var(--sage-700);
+}
+
+.card[data-category='numbers'] .pebble {
+    background: var(--blush-100);
+}
+
+.card[data-category='flags'] {
+    --slab: var(--blush-700);
+}
+
+.card[data-category='geography'] {
+    --slab: var(--bark);
+}
+
+.card[data-category='continents'] {
+    --slab: var(--sage-600);
+}
+
+.card[data-category='oceans'] {
+    --slab: var(--sage-700);
+}
+
+.card[data-category='clock'] {
+    --slab: var(--bark);
+}
+
+/* Feedback never disappears under reduced motion; only motion does. The 6px of
+   travel goes, the shadow still collapses so the card still visibly goes down,
+   and the press floods with colour instead of scaling (PLAN 3.4). */
+@media (prefers-reduced-motion: reduce) {
+    .card {
+        transition: box-shadow 0.01ms, background-color 0.01ms;
+    }
+
+    .card:active {
+        transform: none;
+        background: var(--sage-100);
+        box-shadow: var(--shadow-press);
+    }
+}

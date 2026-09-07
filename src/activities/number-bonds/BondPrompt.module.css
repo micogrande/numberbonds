@@ -1,0 +1,122 @@
+/*
+  Was components/BondDiagram.module.css.
+
+  Every size in here comes from `GEOMETRY` in BondPrompt.jsx, handed over as
+  custom properties on the container. That is deliberate and it is the fix for
+  PLAN 5's connector bug: the old file had the layout in CSS and the SVG's idea
+  of the layout in JSX, the two never agreed, and the comment above the lines
+  admitted as much. There is now one set of numbers.
+
+  Do not put a pixel size back in this file. If a size needs to change, change it
+  in GEOMETRY and both the box and the lines follow.
+*/
+
+.container {
+    position: relative;
+    /* Exactly the diagram, so the SVG's inset:0 box and its viewBox are the
+       same rectangle and a line endpoint is a real circle edge. */
+    width: var(--bond-width);
+    height: var(--bond-height);
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.wholePosition,
+.partsContainer {
+    display: flex;
+    justify-content: center;
+    /* Above the connectors. */
+    z-index: 2;
+}
+
+.partsContainer {
+    gap: var(--bond-part-gap);
+    margin-top: var(--bond-row-gap);
+}
+
+.linesSvg {
+    position: absolute;
+    /* Was top:50%, on a container whose whole circle lives in the TOP half — so
+       the lines floated across and below the parts and reached nothing. */
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.connector {
+    stroke: var(--color-text-light);
+    stroke-width: 3;
+    opacity: 0.3;
+    stroke-linecap: round;
+}
+
+.circle {
+    width: var(--bond-part-size);
+    height: var(--bond-part-size);
+    border-radius: 50%;
+    background: var(--color-surface);
+    border: 3px solid var(--color-text);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: var(--color-text);
+    box-shadow: var(--shadow-md);
+    position: relative;
+}
+
+.whole {
+    width: var(--bond-whole-size);
+    height: var(--bond-whole-size);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+    font-size: 2rem;
+}
+
+.missing {
+    border-style: dashed;
+    border-color: var(--color-text-light);
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--color-text);
+}
+
+/*
+  The three rules below were `.filled` / `.correction` / `.success`, applied by
+  BondPrompt. The missing slot is `input/AnswerBox.jsx` now (PLAN 2.4) and the box
+  reports its own state, so they are attribute selectors instead. Same specificity
+  as the class pairs they replace, same source order, same result.
+
+  `data-filled` and `data-feedback` are separate on purpose: during the 500ms
+  shake the box is filled with her wrong answer AND in the error state, and she
+  has to be able to see what she typed. Error therefore has no rule of its own —
+  it keeps the filled look and shakes.
+*/
+.missing[data-filled='true'] {
+    border-style: solid;
+    border-color: var(--color-secondary);
+    color: var(--color-secondary);
+}
+
+.missing[data-feedback='correction'] {
+    border-style: solid;
+    border-color: var(--color-warning);
+    color: var(--color-warning);
+    /* Was a hardcoded #fffbeb. PLAN 3.1 names --color-warning-soft as its
+       replacement and the garden pass (step 12) made the swap: --color-warning
+       on it measures 4.71:1, where the old amber-on-amber pair was 2.07:1. */
+    background-color: var(--color-warning-soft);
+}
+
+.missing[data-feedback='success'] {
+    border-style: solid;
+    border-color: var(--color-success);
+    color: var(--color-success);
+    /* Was a hardcoded #f0fdf4, replaced by --color-success-soft for the same
+       reason: --color-success on it measures 4.52:1, against 2.18:1 before. */
+    background-color: var(--color-success-soft);
+}

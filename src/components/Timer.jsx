@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { formatTime } from '../lib/time';
 
 const Timer = ({ startTime }) => {
     const [elapsed, setElapsed] = useState(0);
@@ -12,13 +13,6 @@ const Timer = ({ startTime }) => {
 
         return () => clearInterval(interval);
     }, [startTime]);
-
-    const formatTime = (ms) => {
-        const seconds = Math.floor(ms / 1000);
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
 
     return (
         <div style={{

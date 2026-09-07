@@ -1,90 +1,38 @@
+/* What is left of the shared screen styles: the play screen, and only the play
+   screen. The home-menu classes moved out with the menu they belonged to — the
+   3-20 target grid is now `screens/ActivityScreen.module.css`, character for
+   character (PLAN 9.2, owner decision).
+
+   PLAN 2.7 has this file deleted at step 12, folded into a PlayScreen module.
+   It is NOT deleted here, deliberately: the file it would become belongs beside
+   `screens/PlayScreen.jsx`, and that rename touches the JSX import line, which
+   is outside this pass's ownership while another agent is in the tree. The
+   garden restyle is in it instead, so the move is a rename and nothing else.
+
+   The play screen is the quiet backdrop the confetti lands against (PLAN 3):
+   the same cream page as everywhere else, and nothing decorative competing with
+   the card she is answering. */
+
 .screen {
     height: 100%;
     width: 100%;
     display: flex;
     flex-direction: column;
-    padding: var(--spacing-md);
     background: var(--color-bg);
-}
-
-/* Home Screen */
-.homeContainer {
-    justify-content: center;
-    align-items: center;
-    gap: var(--spacing-xl);
-}
-
-.title {
-    font-size: 3rem;
-    font-weight: 900;
-    color: var(--color-primary);
-    text-align: center;
-    margin-bottom: var(--spacing-lg);
-}
-
-.menuButtons {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    /* Center children horizontally */
-    gap: var(--spacing-md);
-    width: 100%;
-    max-width: 450px;
-    /* Increased to fit the 6-col grid */
-}
-
-.primaryButton {
-    width: 100%;
-    /* Fill the container */
-    background: var(--color-primary);
-    color: white;
-    padding: var(--spacing-md) var(--spacing-lg);
-    border-radius: var(--radius-lg);
-    font-size: 1.25rem;
-    font-weight: 700;
-    box-shadow: var(--shadow-md);
-    transition: transform 0.1s;
-    border: none;
-    cursor: pointer;
-}
-
-.primaryButton:active {
-    transform: scale(0.98);
-}
-
-.secondaryButton {
-    background: white;
-    color: var(--color-primary);
-    border: 2px solid var(--color-primary);
-    padding: var(--spacing-md);
-    border-radius: var(--radius-lg);
-    font-size: 1.25rem;
-    font-weight: 700;
+    padding: max(var(--spacing-sm), var(--safe-top)) var(--spacing-md)
+        max(var(--spacing-md), var(--safe-bottom));
 }
 
 /* Game Screen */
 .gameContainer {
     justify-content: flex-start;
     /* Header at top */
-    /* Remove gap, handled by padding/margins of children */
 }
 
-.header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    padding: var(--spacing-xs);
-    /* Very tight header */
-}
+/* .header and .score moved to components/ScreenHeader.module.css — the header
+   is a component now, and its styles live beside it. */
 
-.score {
-    font-size: 1.25rem;
-    font-weight: 800;
-    color: var(--color-warning);
-}
-
-/* Wrapper for Diagram + Keypad to center them together */
+/* Wrapper for the prompt + the input, centred together. */
 .mainContent {
     flex: 1;
     width: 100%;
@@ -92,45 +40,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding-bottom: var(--spacing-xl);
-    /* Push up slightly */
+    padding-bottom: var(--spacing-lg);
+    min-height: 0;
     gap: var(--spacing-lg);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-}
-
-.numberGrid {
-    display: grid;
-    grid-template-columns: repeat(6, 1fr);
-    gap: var(--spacing-sm);
-    margin: var(--spacing-lg) auto;
-    width: 100%;
-    max-width: fit-content;
-}
-
-.numberButton {
-    width: 50px;
-    height: 50px;
-    border-radius: 12px;
-    font-weight: 900;
-    font-size: 1.25rem;
-    border: 2px solid var(--color-text-light);
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: white;
-    color: var(--color-text);
-}
-
-.numberButton.active {
-    background: var(--color-primary);
-    color: white;
-    transform: scale(1.1);
-    border-color: var(--color-primary);
 }
 
 .gameArea {

@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="Strawberry">
+  <title>Amelia</title>
+  <!--
+    Amelia's Garden favicon. Hand-written, no image files ship (PLAN 3.5).
+    Three flat fills plus one outline: berry, leaf, seed, ink.
+    Colours are literals from the PLAN 3.1 palette because a favicon is loaded
+    outside the document and cannot read CSS custom properties.
+  -->
+  <g fill="none" stroke="#3E4A3A" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- calyx: three leaves fanned from the crown -->
+    <ellipse cx="16" cy="5.4" rx="2.5" ry="4.2" fill="#5B7553" transform="rotate(-58 16 9.2)" />
+    <ellipse cx="16" cy="5.4" rx="2.5" ry="4.2" fill="#5B7553" transform="rotate(58 16 9.2)" />
+    <ellipse cx="16" cy="5.8" rx="2.2" ry="3.8" fill="#5B7553" />
+    <!-- berry: wide shoulders, tapering to a point -->
+    <path d="M16 28.8C10.4 25 6.4 20.4 6.4 16.2 6.4 12 10.6 9.4 16 9.4s9.6 2.6 9.6 6.8c0 4.2-4 8.8-9.6 12.6Z" fill="#C0455A" />
+  </g>
+  <!-- seeds, unstroked so they stay countable rather than turning into ink blobs -->
+  <g fill="#F6D98A">
+    <ellipse cx="12.4" cy="15.4" rx="1" ry="1.4" />
+    <ellipse cx="19.6" cy="15.4" rx="1" ry="1.4" />
+    <ellipse cx="16" cy="18.6" rx="1" ry="1.4" />
+    <ellipse cx="13.2" cy="21.2" rx="1" ry="1.4" />
+    <ellipse cx="18.8" cy="21.2" rx="1" ry="1.4" />
+  </g>
+</svg>

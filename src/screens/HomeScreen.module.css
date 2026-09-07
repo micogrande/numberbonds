@@ -1,0 +1,107 @@
+/* Home — "Amelia's Garden". (PLAN 3.3)
+
+   > The home screen reads as one small garden seen from above: six rounded
+   > patches, one already in bloom and five still asleep.
+
+   FILL THE VIEWPORT, NEVER SCROLL. `body { overflow: hidden }` is already set,
+   so a layout that wants more room than the phone has does not get a scrollbar
+   — it gets a clipped bottom row. Hence `grid-auto-rows: minmax(0, 1fr)` and
+   deliberately NO `aspect-ratio` on the rows: the grid compresses on a short
+   device instead of overflowing (PLAN 3.3).
+
+   Smallest computed card at 320x568 is about 141x123, which is roughly double
+   the 75px guidance for children and triple the 44px house floor.
+
+   Colour, all measured:
+     card label   --color-text on --color-surface   9.20:1
+     sleep label  --color-text on --color-bg        8.82:1
+     "welcome"    --color-text on --color-bg        8.82:1
+     "amelia"     --color-secondary on --color-bg   4.71:1  (AA at any size, and
+                  it is set at --fs-display, so it is nowhere near the line) */
+
+.screen {
+    position: relative;
+    height: 100%;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+    background: var(--color-bg);
+    overflow: hidden;
+
+    /* Never under the notch, never under the home indicator. env() carries its
+       own 0px fallback in variables.css, which is what keeps this max() valid
+       on a browser that has never heard of safe areas. */
+    padding: max(var(--spacing-sm), var(--safe-top)) var(--spacing-md)
+        max(var(--spacing-sm), var(--safe-bottom));
+}
+
+/* ─── 1. the header band ──────────────────────────────────────────────────── */
+
+.header {
+    position: relative;
+    z-index: 1;
+    flex: 0 0 clamp(96px, 17vh, 150px);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-bottom: 10px;
+}
+
+.welcome {
+    font-family: var(--font-display);
+    font-size: var(--fs-display);
+    font-weight: 800;
+    line-height: 0.95;
+    color: var(--color-text);
+    /* lowercase, and not letter-spaced (PLAN 3.2) */
+    text-transform: lowercase;
+}
+
+.name {
+    color: var(--color-secondary);
+}
+
+/* ~56px, over on the right, sitting on the grass line with his ears breaking
+   through it. Decoration: it is not in the tab order and takes no taps. */
+.bunny {
+    position: absolute;
+    right: 4%;
+    bottom: -6px;
+    width: clamp(52px, 8vh, 72px);
+    height: clamp(52px, 8vh, 72px);
+    pointer-events: none;
+}
+
+.grass {
+    position: absolute;
+    left: calc(-1 * var(--spacing-md));
+    right: calc(-1 * var(--spacing-md));
+    bottom: 0;
+    width: auto;
+    height: 14px;
+    pointer-events: none;
+}
+
+/* ─── 2. the grid ─────────────────────────────────────────────────────────── */
+
+.grid {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    grid-auto-rows: minmax(0, 1fr);
+    gap: clamp(8px, 1.6vh, 18px);
+    width: 100%;
+    min-height: 0;
+    /* Tablet: stop the cards stretching into letterboxes (PLAN 3.3). */
+    max-width: 560px;
+    margin-inline: auto;
+    padding-top: var(--spacing-sm);
+}
+
+/* ─── 3. the bottom ───────────────────────────────────────────────────────────
+   Nothing. The hills live in the ambient layer at z-index 0 with
+   `pointer-events: none`, so the bottom edge of this page cannot be tapped into
+   anything at all — which is the point (PLAN 3.3). */

@@ -1,0 +1,190 @@
+/* A sleeping category slot. (PLAN 3.6)
+
+   Everything a card has, this does not: no surface, no slab, no shadow, no
+   border, no radius. It is a pot and a bunny sitting on the page. The position
+   is held for spatial memory; the affordance is unmistakably absent.
+
+   Measured, since this is the one label PLAN gets wrong twice:
+     --color-text on --color-bg          8.82:1   ← what ships
+     --color-text-light on --color-bg    5.15:1   (PLAN 3.6 says 3.73:1; it is
+                                                   wrong, and it passes AA — but
+                                                   the ink stays full anyway)
+     --color-text-light at .75 opacity   3.12:1   ← what this replaces. THAT is
+                                                   the real AA fail, and it was
+                                                   shipping. */
+
+.slot {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(2px, 1vh, 8px);
+    padding: var(--spacing-sm);
+    min-height: 0;
+
+    background: none;
+    border: none;
+    box-shadow: none;
+    color: var(--color-text);
+}
+
+/* The still life: bunny curled on the left, pot on the right, both standing on
+   the same invisible ground line. The whole group is what wiggles. */
+.still {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 0;
+    width: clamp(86px, 21vh, 140px);
+    aspect-ratio: 1;
+    min-height: 0;
+    transform-origin: 50% 92%;
+    /* rotated about where it meets the ground, so it rocks rather than spins */
+}
+
+/* 400ms, ±2.5°, exactly as specified. It is a rock, not a shake: a shake is
+   what a WRONG ANSWER does (feedback/motion.js), and a sleeping thing being
+   nudged must not borrow that vocabulary. */
+.still[data-nudged='true'] {
+    animation: sleepWiggle 400ms ease-in-out;
+}
+
+@keyframes sleepWiggle {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    22% {
+        transform: rotate(-2.5deg);
+    }
+
+    55% {
+        transform: rotate(2.5deg);
+    }
+
+    80% {
+        transform: rotate(-1.2deg);
+    }
+}
+
+.bunny {
+    width: 52%;
+    height: 52%;
+    display: block;
+    /* nudged down so his ground line is the pot's ground line */
+    margin-bottom: -3%;
+}
+
+.pot {
+    width: 62%;
+    height: 96%;
+    display: block;
+    margin-left: -8%;
+}
+
+/* "z z z", floating up off the bunny and fading. Three of them, staggered and
+   growing, which is how a comic draws sleep — over in about a second and a
+   quarter, and gone. */
+.zzz {
+    position: absolute;
+    left: 2%;
+    top: 0;
+    display: flex;
+    align-items: flex-end;
+    gap: 2px;
+
+    font-family: var(--font-display);
+    font-size: var(--fs-small);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--color-text-light);
+    pointer-events: none;
+}
+
+.zzz span {
+    opacity: 0;
+    animation: zFloat 1.15s ease-out forwards;
+}
+
+.zzz span:nth-child(1) {
+    font-size: 0.72em;
+}
+
+.zzz span:nth-child(2) {
+    font-size: 0.9em;
+    animation-delay: 150ms;
+}
+
+.zzz span:nth-child(3) {
+    font-size: 1.1em;
+    animation-delay: 300ms;
+}
+
+@keyframes zFloat {
+    0% {
+        opacity: 0;
+        transform: translate(0, 8px) rotate(-8deg);
+    }
+
+    22% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translate(11px, -24px) rotate(10deg);
+    }
+}
+
+.label {
+    font-family: var(--font-display);
+    font-size: var(--fs-small);
+    font-weight: 700;
+    line-height: 1.1;
+    text-align: center;
+    /* Full moss ink. 8.82:1. Never faded. */
+    color: var(--color-text);
+}
+
+/* Feedback never disappears under reduced motion; only motion does. The nudge
+   is still answered inside its 400ms — it dips instead of rocking — and the
+   "z z z" still appears and fades, it just does not travel. */
+@media (prefers-reduced-motion: reduce) {
+    .still[data-nudged='true'] {
+        animation-name: sleepDip;
+    }
+
+    @keyframes sleepDip {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        45% {
+            opacity: 0.5;
+        }
+    }
+
+    .zzz span {
+        animation-name: zFade;
+    }
+
+    @keyframes zFade {
+        0% {
+            opacity: 0;
+        }
+
+        22% {
+            opacity: 1;
+        }
+
+        100% {
+            opacity: 0;
+        }
+    }
+}

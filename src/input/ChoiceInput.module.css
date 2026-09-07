@@ -1,0 +1,177 @@
+/* The choice adapter's look. (PLAN 4.4)
+
+   Four buttons, two columns, each at least 88px tall — "Three choices give a 33%
+   guess floor that makes the score noise; six would halve the button height or
+   push the numeral off screen." The height floor is the load-bearing number in
+   this file and it is a minimum, not a size: the row grows if a label wraps.
+
+   Every state a button can be in is `data-state` on the element, and this file
+   is all of the animation. That is deliberate — see the note in ChoiceInput.jsx
+   about keeping framer-motion out of the first chunk. It also means the press
+   and the grading cannot be late.
+
+   Colour says exactly one thing here, and it says it in green. There is no red
+   and no error tint anywhere below — a wrong answer is movement, then absence
+   (house rule: never a harsh X, never alarm red). */
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(var(--choice-columns, 2), 1fr);
+    gap: var(--spacing-md);
+    width: 100%;
+    max-width: 380px;
+    margin: 0 auto;
+    padding: var(--spacing-sm);
+}
+
+.choice {
+    /* PLAN 4.4: >=88px tall. Twice the 44px house floor, because this is the
+       target she aims at ten to eighteen times in a row. */
+    min-height: 88px;
+    padding: var(--spacing-sm) var(--spacing-md);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+
+    background: var(--color-surface);
+    color: var(--color-text);
+    border: 2px solid transparent;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+
+    font-family: var(--font-body);
+    font-size: clamp(1.375rem, 5vw, 1.75rem);
+    font-weight: 900;
+    line-height: 1.15;
+    text-align: center;
+
+    cursor: pointer;
+    transition: background-color 0.15s ease, box-shadow 0.15s ease, border-color 0.2s ease,
+        opacity 0.25s ease, transform 0.1s ease;
+}
+
+/* The depress fires on :active in pure CSS, so there is zero JS latency — a
+   response later than ~100ms reads to a six-year-old as "it didn't work" and
+   earns a second tap (house rule). It can never collide with the keyframes
+   below: every one of those plays while the button is disabled, and a disabled
+   button is never :active. */
+.choice:active:not(:disabled) {
+    transform: scale(0.97);
+    background: var(--color-bg);
+    box-shadow: var(--shadow-sm);
+}
+
+.choice:disabled {
+    cursor: default;
+}
+
+/* Not her button, while the app is busy answering. Present, but not shouting. */
+.choice[data-state='quiet'] {
+    opacity: 0.55;
+}
+
+/* 500ms of "not that one", and nothing else: no colour, no cross, nothing
+   revealed yet. The same shake the answer box does for a typed answer. */
+.choice[data-state='wrong'] {
+    animation: choiceShake 0.4s ease;
+}
+
+/* What `wrong` becomes when the answer is revealed. It recedes and gives up its
+   shadow, settling back into the page instead of being crossed out. */
+.choice[data-state='dimmed'] {
+    opacity: 0.32;
+    box-shadow: none;
+}
+
+/* The right answer, lit. It arrives on a correct tap and stays lit for the whole
+   1500ms; on a wrong one it arrives at 500ms and stays until the card advances
+   at 2500ms. */
+.choice[data-state='correct'] {
+    background: var(--color-success);
+    border-color: var(--color-success);
+    color: white;
+    animation: choicePop 0.4s ease;
+}
+
+@keyframes choiceShake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-10px);
+    }
+
+    50% {
+        transform: translateX(10px);
+    }
+
+    75% {
+        transform: translateX(-6px);
+    }
+}
+
+@keyframes choicePop {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    45% {
+        transform: scale(1.06);
+    }
+}
+
+.art {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    max-width: 100%;
+}
+
+.label {
+    /* The word is a real channel: it is drawn whether or not there is a picture
+       above it. See the note in ChoiceInput.jsx. */
+    display: block;
+}
+
+/* Feedback never disappears under reduced motion; only motion does. The green
+   still arrives, the dim still happens, the press still floods with colour — the
+   travel is what goes, and the shake becomes a pulse so a wrong tap is still
+   answered inside its 500ms. */
+@media (prefers-reduced-motion: reduce) {
+    .choice {
+        transition: background-color 0.15s ease, box-shadow 0.15s ease, border-color 0.2s ease,
+            opacity 0.25s ease;
+    }
+
+    .choice:active:not(:disabled) {
+        transform: none;
+    }
+
+    .choice[data-state='wrong'] {
+        animation: choicePulse 0.4s ease;
+    }
+
+    .choice[data-state='correct'] {
+        animation: none;
+    }
+
+    @keyframes choicePulse {
+
+        0%,
+        100% {
+            opacity: 1;
+        }
+
+        50% {
+            opacity: 0.45;
+        }
+    }
+}

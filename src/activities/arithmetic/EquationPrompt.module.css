@@ -1,0 +1,120 @@
+/*
+  Arithmetic — the equation. (PLAN 4.2, PLAN 4.3)
+
+  One line: `17 − 4 = ␣`. It has to be big enough that the U+2212 minus reads as
+  an instruction rather than as a dash between two numbers ("at 44px+ the
+  difference is obvious", PLAN 4.3) and small enough that the widest card in
+  either deck still fits across her phone without wrapping. A line broken over
+  two rows is a different sentence, so nothing here is allowed to wrap.
+
+  THE WIDEST CARD is `10 + 10 = [12]`: three two-digit numbers, two operators
+  and a two-digit answer box. At the sizes below that measures ~280px at 44px
+  type, against 343px of usable width on a 375px phone and 288px on a 320px one
+  — which is why the fluid size floors at 2.5rem rather than following
+  --fs-numeral, whose floor of 2.75rem overflows the small end.
+
+  Colour, measured:
+    numbers and operators  --color-text on --color-bg        8.82:1
+    the empty slot         --color-text-light border         (not text)
+    her answer             --color-secondary on surface      5.24:1
+    revealed answer        --color-warning on warning-soft    4.71:1
+    correct answer         --color-success on success-soft    4.52:1
+*/
+
+.container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    /* The same breathing room the bond diagram takes above the keypad. */
+    padding: var(--spacing-md) var(--spacing-sm);
+}
+
+.equation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Nunito, because these are maths digits and PLAN 3.2 is explicit that the
+       numeral face never changes: its 1/7/4 are unambiguous at speed and the
+       keypad, the bond diagram and the timer are already tuned to its metrics.
+       Never set these in Baloo. */
+    font-family: var(--font-body);
+    font-weight: 900;
+    font-size: clamp(2.5rem, 12vw, 3.75rem);
+    line-height: 1;
+    color: var(--color-text);
+
+    /* One line, always. */
+    white-space: nowrap;
+    gap: 0.16em;
+
+    /* She taps a keypad underneath this; a long-press on the equation should not
+       pop up a selection handle. */
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.number {
+    /* Tabular figures so `9 + 9` and `10 + 10` do not shuffle sideways between
+       cards — the numbers should look like they are standing in the same place
+       every time, because she is looking at the same place every time. */
+    font-variant-numeric: tabular-nums;
+}
+
+.operator {
+    /* The `+`, the `−` and the `=`. Slightly lighter than the numbers so the
+       numbers stay the subject of the line, and slightly wider so the minus is
+       unmistakably an operator with room around it. */
+    color: var(--color-text-light);
+    padding-inline: 0.06em;
+}
+
+/*
+  The answer box: input/AnswerBox.jsx wearing this activity's skin (PLAN 2.4).
+  It reports what is in it through data attributes, so the three states below are
+  the same three the bond diagram draws — same tokens, same meaning, different
+  shape. `data-filled` and `data-feedback` are separate because during the 500ms
+  shake the box is BOTH filled (with her wrong answer, which she must be able to
+  see) and in the error state.
+*/
+.answer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* Wide enough for two digits — the largest answer anywhere in either deck is
+       20 — so the box does not resize between `?` and `13`. */
+    min-width: 1.7em;
+    padding: 0.08em 0.12em;
+
+    border: 3px dashed var(--color-text-light);
+    border-radius: 0.28em;
+    background: rgba(255, 255, 255, 0.5);
+    color: var(--color-text);
+    font-variant-numeric: tabular-nums;
+    box-shadow: var(--shadow-md);
+}
+
+.answer[data-filled='true'] {
+    border-style: solid;
+    border-color: var(--color-secondary);
+    color: var(--color-secondary);
+    background: var(--color-surface);
+}
+
+/* The soft reveal of the right answer. Warm, never an alarm — the house rule is
+   a gentle shake and a soft reveal, never a harsh X. */
+.answer[data-feedback='correction'] {
+    border-style: solid;
+    border-color: var(--color-warning);
+    color: var(--color-warning);
+    background-color: var(--color-warning-soft);
+}
+
+.answer[data-feedback='success'] {
+    border-style: solid;
+    border-color: var(--color-success);
+    color: var(--color-success);
+    background-color: var(--color-success-soft);
+}

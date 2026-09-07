@@ -1,4 +1,7 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
+/* Two families, one request (PLAN 3.2). Baloo 2 at 700/800 is display and
+   category labels only; Nunito carries body text and every maths digit in the
+   app. `display=swap` so the first paint is never blank text on her phone. */
+@import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@700;800&family=Nunito:wght@400;700;900&display=swap');
 @import './styles/variables.css';
 
 *,
@@ -21,6 +24,12 @@ body {
     overflow: hidden;
     /* App-like feel */
     height: 100vh;
+    /* Fallback: every browser understands vh */
+    height: 100dvh;
+    /* 100vh is the *largest* viewport height, so on a phone the bottom keypad
+       row sits behind the browser chrome until the URL bar collapses. dvh is
+       the live height, so the last row is on screen from the first frame.
+       PLAN 3.3 — keep the vh line above it as the fallback. */
     width: 100vw;
 }
 
@@ -49,4 +58,33 @@ button {
     height: 100%;
     width: 100%;
     position: relative;
+}
+
+/* ── Short viewports (landscape phones) ───────────────────────────────────
+   The app is portrait-first, but in landscape a phone viewport is only ~390px
+   tall. The fixed 100dvh height plus body { overflow: hidden } pushed the
+   ENTER / 0 / DEL row of the keypad off the bottom edge with no way to reach
+   it — she could not submit an answer at all (PLAN 5, index.css:21).
+
+   The fix is to stop pinning the app to the viewport when the viewport is too
+   short to hold it: the layout takes the height it needs and the page scrolls
+   to reach it. Nothing is ever clipped away. Pull-to-refresh stays dead,
+   because overscroll-behavior: none is still in force.
+   ─────────────────────────────────────────────────────────────────────── */
+@media (orientation: landscape) and (max-height: 560px) {
+    body {
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+        /* 100vw would add a horizontal scrollbar once the vertical one appears */
+        width: 100%;
+        overflow-y: auto;
+    }
+
+    #root,
+    .full-screen {
+        height: auto;
+        min-height: 100vh;
+        min-height: 100dvh;
+    }
 }
