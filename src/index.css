@@ -19,18 +19,32 @@ body {
     color: var(--color-text);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+
+    /* Pull-to-refresh stays dead (PLAN 2.5). */
     overscroll-behavior: none;
-    /* Prevent pull-to-refresh on mobile */
+
+    /* KEEP THIS. It is what pins the small viewport and what stops the document
+       ever scrolling, and it is safe now only because every screen owns its own
+       scrolling — components/screen/Screen.module.css. Before that it was the
+       decision that turned every vertical shortfall into permanently destroyed
+       content: the page could not fit and could not scroll, so the last activity
+       card was simply unreachable. Do not remove this without reading that file
+       first; removing it alone brings the bug back in a new shape. */
     overflow: hidden;
-    /* App-like feel */
+
+    /* svh, NOT dvh, and the vh line above it is the fallback.
+       The old comment here credited dvh with putting the last row on screen. It
+       is wrong, and it was teaching the next agent something false: a mobile
+       toolbar collapses in response to the DOCUMENT scrolling, this document
+       never scrolls, so dvh is pinned to the small viewport and is numerically
+       identical to svh — with a relayout per toolbar frame for free. See the
+       long note in Screen.module.css. */
     height: 100vh;
-    /* Fallback: every browser understands vh */
-    height: 100dvh;
-    /* 100vh is the *largest* viewport height, so on a phone the bottom keypad
-       row sits behind the browser chrome until the URL bar collapses. dvh is
-       the live height, so the last row is on screen from the first frame.
-       PLAN 3.3 — keep the vh line above it as the fallback. */
-    width: 100vw;
+    height: 100svh;
+
+    /* 100% and not 100vw: vw includes the scrollbar gutter, which is a latent
+       horizontal-overflow bug the moment anything on desktop grows one. */
+    width: 100%;
 }
 
 #root {
@@ -60,31 +74,20 @@ button {
     position: relative;
 }
 
-/* ── Short viewports (landscape phones) ───────────────────────────────────
-   The app is portrait-first, but in landscape a phone viewport is only ~390px
-   tall. The fixed 100dvh height plus body { overflow: hidden } pushed the
-   ENTER / 0 / DEL row of the keypad off the bottom edge with no way to reach
-   it — she could not submit an answer at all (PLAN 5, index.css:21).
+/* ── DELETED: @media (orientation: landscape) and (max-height: 560px) ──────
+   It was the only layout media query the app had, and it was gated on the wrong
+   term. Every failure measured across the whole matrix is a HEIGHT failure and
+   orientation is irrelevant to all of them — so it rescued the orientation she
+   does not use and excluded 375x554 portrait, which is the device the owner
+   actually reported. That one `orientation` term is what turned "too tall" into
+   "destroyed" on every 667-class phone with the URL bar showing.
 
-   The fix is to stop pinning the app to the viewport when the viewport is too
-   short to hold it: the layout takes the height it needs and the page scrolls
-   to reach it. Nothing is ever clipped away. Pull-to-refresh stays dead,
-   because overscroll-behavior: none is still in force.
-   ─────────────────────────────────────────────────────────────────────── */
-@media (orientation: landscape) and (max-height: 560px) {
-    body {
-        height: auto;
-        min-height: 100vh;
-        min-height: 100dvh;
-        /* 100vw would add a horizontal scrollbar once the vertical one appears */
-        width: 100%;
-        overflow-y: auto;
-    }
+   It also carried three `min-height: 100dvh` declarations on the single
+   configuration where the body genuinely did scroll — the one place in the repo
+   where dvh cost a real relayout per scroll frame.
 
-    #root,
-    .full-screen {
-        height: auto;
-        min-height: 100vh;
-        min-height: 100dvh;
-    }
-}
+   Its job is done properly now, on the axis that actually fails: a screen's
+   content region scrolls when its content does not fit, at any orientation, and
+   `@media (height < 560px)` in Screen.module.css additionally releases the two
+   screens that claim to be bounded. Deleting a special case beats fixing its
+   condition. ─────────────────────────────────────────────────────────────── */

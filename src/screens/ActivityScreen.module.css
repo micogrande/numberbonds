@@ -25,23 +25,18 @@
      selected number   white on --color-primary          5.10:1
      start button      white on --color-primary          5.10:1 */
 
-.screen {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    background: var(--color-bg);
-    padding: max(var(--spacing-sm), var(--safe-top)) var(--spacing-md)
-        max(var(--spacing-md), var(--safe-bottom));
-}
+/* .screen is gone: the frame is <Screen growth="flow"> now, and the height,
+   the overflow and the safe-area padding it used to declare belong to
+   components/screen/Screen.module.css. This module owns what the picker LOOKS
+   like and nothing about whether it fits. */
 
+/* <ScreenContent mode="center"> already supplies the centred flex column; this
+   only supplies what is left of the old .body, which is nothing but a name. The
+   two shape it draws — the frozen 3-20 grid and the option list — are below and
+   are unchanged. */
 .body {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    min-height: 0;
+    /* No layout of its own. Kept as a hook so the JSX reads the same. */
+    width: 100%;
 }
 
 .title {
@@ -112,6 +107,18 @@
 
 /* ─── the 3–20 grid · geometry frozen, colours only ─────────────────────── */
 
+/* NOT ONE NUMBER IN THIS RULE OR THE NEXT HAS CHANGED (PLAN 9.2, owner
+   decision, confirmed on her actual phone): six columns, 8px gaps, 50px
+   buttons, 12px radius, 1.25rem type, 2px border, scale(1.1) on the selected
+   one, in the same 450px column.
+
+   What changed is the BOX. Six 50px columns with five 8px gaps lay out to
+   340px, and `width: 100%` resolves against a parent that is only 288px wide on
+   a 320px phone — so the tracks overflow their own container to the right and
+   the shipped build put buttons 8, 14 and 20 36px off the edge of the page with
+   `body { overflow: hidden }` and no way to reach them. The screen's content
+   region now scrolls on the inline axis, so 20 is a swipe away instead of gone.
+   That is the container fixed, not the grid. */
 .numberGrid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);

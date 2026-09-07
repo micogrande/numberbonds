@@ -13,10 +13,12 @@
  *
  * This is also the code-splitting boundary. Nothing above it imports this file
  * statically: both manifests hold `() => import('./index.js')`, so the home
- * screen can list every activity in the app without pulling this renderer,
- * framer-motion or the card space into the first chunk she downloads. Both
- * manifests naming the same module is what makes addition and subtraction one
- * chunk rather than two.
+ * screen can list every activity in the app without pulling this renderer or
+ * the card space into the first chunk she downloads. Both manifests naming the
+ * same module is what makes addition and subtraction one chunk rather than two.
+ *
+ * It does not keep framer-motion out and never claimed to since the home screen
+ * grew a release spring — see `number-bonds/index.js` for the correction.
  *
  * No `grade` export. Every answer here is a number and `===` after coercion is
  * the whole of the grading (PLAN 2.4) — the seam exists for the clock's

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 
 import styles from './ActivityScreen.module.css'
+import Screen, { ScreenChrome, ScreenContent } from '../components/screen/Screen'
 import ScreenHeader from '../components/ScreenHeader'
 
 /**
@@ -74,10 +75,25 @@ const ActivityScreen = ({ activity, initialOptionId, onBack, onStart }) => {
   const isChips = !isGrid && activity.options.some((option) => typeof option.caption === 'string')
 
   return (
-    <div className={styles.screen}>
-      <ScreenHeader onBack={onBack} />
+    // growth="flow": the child count is `activity.options.length`, which is
+    // manifest data — eighteen for the bonds grid, three for roman numerals.
+    // There is no constant in this source tree to name, so the region scrolls.
+    //
+    // It scrolls on the INLINE axis too, and that is what makes the 3-20 grid
+    // reachable on a narrow phone without touching one number inside it. Six
+    // columns of 50px with 8px gaps lay out to 340px; below 356 CSS px of
+    // viewport that row is wider than the page, and on the shipped build
+    // buttons 8, 14 and 20 sat 36px off the right edge with no way to get to
+    // them — `window.innerWidth` even reported 356 for a 320px viewport,
+    // because Chrome widens the initial containing block when content
+    // overflows, which hides the clipping from anything that trusts it.
+    // PLAN 9.2 freezes the GRID. The box around it is not frozen.
+    <Screen growth="flow">
+      <ScreenChrome>
+        <ScreenHeader onBack={onBack} />
+      </ScreenChrome>
 
-      <div className={styles.body}>
+      <ScreenContent mode="center" className={styles.body}>
         <h1 className={styles.title}>{activity.title}</h1>
         <p className={styles.subtitle}>{activity.subtitle}</p>
 
@@ -123,8 +139,8 @@ const ActivityScreen = ({ activity, initialOptionId, onBack, onStart }) => {
             })}
           </div>
         </div>
-      </div>
-    </div>
+      </ScreenContent>
+    </Screen>
   )
 }
 

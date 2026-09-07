@@ -3,11 +3,18 @@
    > The home screen reads as one small garden seen from above: six rounded
    > patches, one already in bloom and five still asleep.
 
-   FILL THE VIEWPORT, NEVER SCROLL. `body { overflow: hidden }` is already set,
-   so a layout that wants more room than the phone has does not get a scrollbar
-   — it gets a clipped bottom row. Hence `grid-auto-rows: minmax(0, 1fr)` and
-   deliberately NO `aspect-ratio` on the rows: the grid compresses on a short
-   device instead of overflowing (PLAN 3.3).
+   FILL THE VIEWPORT, NEVER SCROLL — AND HOME IS THE ONLY SCREEN THAT MAY SAY
+   SO. The rule is legitimate here because of one declaration, `grid-auto-rows:
+   minmax(0, 1fr)` with deliberately NO `aspect-ratio`, which GUARANTEES the
+   grid compresses on a short device rather than overflowing. Six slots, fixed
+   forever by PLAN 1, sharing whatever height there is.
+
+   That guarantee holds on this screen and on no other, and applying the
+   conclusion without the premise is the whole of what went wrong: the same
+   `overflow: hidden` sat on `body`, where it also governed a category list
+   whose length comes from the registry and grows every time an activity ships.
+   There it did not compress anything — it deleted the last card. See
+   components/screen/Screen.module.css, and PLAN 3.3.
 
    Smallest computed card at 320x568 is about 141x123, which is roughly double
    the 75px guidance for children and triple the 44px house floor.
@@ -19,29 +26,37 @@
      "amelia"     --color-secondary on --color-bg   4.71:1  (AA at any size, and
                   it is set at --fs-display, so it is nowhere near the line) */
 
-.screen {
-    position: relative;
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: var(--spacing-sm);
-    background: var(--color-bg);
-    overflow: hidden;
+/* Home is <Screen growth="fixed">, and this class is what makes the shared
+   shell home-shaped: the 8px gap between the header band and the grid, and the
+   8px bottom margin where every other screen wants 16. Both were declared by
+   the .screen rule that used to live here; the computed values are unchanged,
+   so the grid gets exactly the height it has always had.
 
-    /* Never under the notch, never under the home indicator. env() carries its
-       own 0px fallback in variables.css, which is what keeps this max() valid
-       on a browser that has never heard of safe areas. */
-    padding: max(var(--spacing-sm), var(--safe-top)) var(--spacing-md)
-        max(var(--spacing-sm), var(--safe-bottom));
+   The `overflow: hidden` this rule used to carry is now the shell's, keyed off
+   growth="fixed" — which is a claim rather than a habit, and one the layout
+   test checks. It was always TRUE here and only here: PLAN 3.3's
+   `grid-auto-rows: minmax(0, 1fr)` genuinely guarantees the grid compresses
+   rather than overflowing. What went wrong was that the same `overflow: hidden`
+   was also applied, on `body`, to four screens with no such guarantee. */
+.home {
+    --screen-row-gap: var(--spacing-sm);
+    /* Zero, and the 8px it used to be is on .grid's padding-bottom instead. The
+       grid's height is identical either way — but a card's slab shadow is 6px
+       BELOW the card, and the content region clips at its own padding box, so
+       8px outside the scroller would have sliced the bottom row's shadow off
+       while 8px inside it gives the shadow room. Same pixels, one fewer
+       visual regression. */
+    --screen-pad-end: 0px;
 }
 
 /* ─── 1. the header band ──────────────────────────────────────────────────── */
 
+/* The band is a grid track now rather than a flex item, so `flex: 0 0 <basis>`
+   becomes an explicit block size — same clamp, same number, and the header no
+   longer needs the rest of the column to agree with it. */
 .header {
-    position: relative;
     z-index: 1;
-    flex: 0 0 clamp(96px, 17vh, 150px);
+    block-size: clamp(96px, 17vh, 150px);
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -85,10 +100,14 @@
 
 /* ─── 2. the grid ─────────────────────────────────────────────────────────── */
 
+/* UNCHANGED, deliberately, character for character where it matters:
+   two columns always, `grid-auto-rows: minmax(0, 1fr)` and no aspect-ratio, so
+   the grid COMPRESSES on a short device instead of overflowing. That guarantee
+   is the reason home may claim growth="fixed" while the category list may not,
+   and it is why home is the one screen in the app that has never clipped. */
 .grid {
     position: relative;
     z-index: 1;
-    flex: 1;
     display: grid;
     grid-template-columns: repeat(2, 1fr);
     grid-auto-rows: minmax(0, 1fr);
@@ -99,6 +118,9 @@
     max-width: 560px;
     margin-inline: auto;
     padding-top: var(--spacing-sm);
+    /* See --screen-pad-end above: this is the screen's bottom margin, moved
+       inside the scroller so the bottom row's slab shadow is not clipped. */
+    padding-bottom: var(--spacing-sm);
 }
 
 /* ─── 3. the bottom ───────────────────────────────────────────────────────────

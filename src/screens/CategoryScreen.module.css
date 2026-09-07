@@ -1,54 +1,31 @@
 /* The room a category opens into. (PLAN 3.7)
 
-   A full screen, not an accordion and not a bottom sheet: the page cannot
-   scroll, so revealing three activities inside the home grid would shove the
-   other cards off the bottom and slide the card she touched away from her
-   finger.
+   What is left in this file is ONE ROW and nothing else. The screen frame, the
+   title, the list and every height in them belong to
+   components/screen/Screen.module.css now — this module used to declare its own
+   `height: 100%`, its own `justify-content: center` and its own `min-height` on
+   the row, and those three together are what clipped the last activity away
+   with no way to reach it. A file that grows a row must not also be the file
+   that decides whether the row fits.
 
    Every row is a slab card, the same object as a home-screen category card and
    pressed the same way, so "a thing you can press" looks identical everywhere
    in the app. Colour, measured:
-     title     --color-text on --color-bg        8.82:1
      row title --color-text on --color-surface   9.20:1
      subtitle  --color-text-light on --surface   5.37:1 */
 
-.screen {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    background: var(--color-bg);
-    padding: max(var(--spacing-sm), var(--safe-top)) var(--spacing-md)
-        max(var(--spacing-md), var(--safe-bottom));
-}
+/* One row per activity, and the whole row is the target.
 
-.title {
-    font-family: var(--font-display);
-    font-size: var(--fs-display);
-    font-weight: 800;
-    line-height: 1;
-    color: var(--color-text);
-    text-align: center;
-    text-transform: lowercase;
-    margin-block: var(--spacing-sm) var(--spacing-lg);
-}
+   No `min-height` and no `flex`: the row's floor is `--row-h`, applied by the
+   list's `grid-auto-rows: minmax(var(--row-h), auto)`. That is not a tidy-up.
+   The rule this replaces was `min-height: 96px; flex: 0 1 auto`, and flex-shrink
+   cannot go below an explicit min-height — so at 320x568 every row was pinned to
+   96px while its own content needed 116, and the wrapped subtitle spilled out of
+   its own padding. Grid rows grow instead.
 
-.list {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: var(--spacing-lg);
-    width: 100%;
-    max-width: 480px;
-    margin-inline: auto;
-    min-height: 0;
-    /* The bottom of a screen is where children mis-tap, so the last row stops
-       short of the edge rather than sitting on it (PLAN 3.3). */
-    padding-bottom: var(--spacing-xl);
-}
-
-/* One row per activity, and the whole row is the target. */
+   `position: relative` is kept for the pencil ::after below and is now harmless:
+   the row lives in the content track, which clips to itself, so a positioned row
+   can no longer paint over the gate in the track above it and steal its tap. */
 .activity {
     position: relative;
     display: flex;
@@ -58,12 +35,9 @@
     gap: var(--spacing-xs);
     text-align: left;
 
-    padding: var(--spacing-lg) var(--spacing-lg);
-    /* ~190px of row on a 390x844 phone (PLAN 3.7), but as a floor and a share
-       of the column rather than a fixed height — three activities land here
-       when arithmetic ships and the page still may not scroll. */
-    min-height: 96px;
-    flex: 0 1 auto;
+    /* Padding steps down with the density scale, because on a short viewport a
+       fixed 24px of it is 48px of height per row that the rows themselves need. */
+    padding: var(--row-pad-y) var(--row-pad-x);
 
     background: var(--color-surface);
     border-radius: var(--radius-card);
@@ -125,6 +99,7 @@
 }
 
 .empty {
+    align-self: center;
     text-align: center;
     color: var(--color-text-light);
     font-size: var(--fs-body);

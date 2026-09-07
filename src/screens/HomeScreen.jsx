@@ -1,6 +1,7 @@
 import React from 'react'
 
 import styles from './HomeScreen.module.css'
+import Screen, { ScreenChrome, ScreenContent } from '../components/screen/Screen'
 import { categoriesInOrder } from '../activities/registry'
 import CategoryCard from '../components/CategoryCard'
 import SleepingSlot from '../components/SleepingSlot'
@@ -37,10 +38,22 @@ import GrassLine from '../components/garden/GrassLine'
  * shapes are now two components; the branch below is otherwise unchanged.
  */
 const HomeScreen = ({ onOpenCategory }) => (
-  <div className={styles.screen}>
+  // growth="fixed", and the constant is written down in this source tree:
+  // PLAN 1, "Six category slots exist on the home screen from day one and never
+  // reorder." `activities/categories.js` throws in dev if that stops being six,
+  // and says in the message what to change if it ever does.
+  //
+  // Home is the one screen in this app that was already correct, and it is
+  // migrated with its geometry preserved to the pixel:
+  // `grid-auto-rows: minmax(0, 1fr)` comes across character for character, the
+  // header band keeps its own clamp, and the 8px bottom margin that every other
+  // screen sets to 16 is handed to the shell as --screen-pad-end. The layout
+  // regression test holds all of it to +/-1px against numbers captured before
+  // any of this moved.
+  <Screen growth="fixed" className={styles.home}>
     <Ambient />
 
-    <div className={styles.header}>
+    <ScreenChrome className={styles.header}>
       <h1 className={styles.welcome}>
         welcome
         <br />
@@ -53,23 +66,25 @@ const HomeScreen = ({ onOpenCategory }) => (
 
       {/* Plants the header on the ground without a rule or a card. */}
       <GrassLine className={styles.grass} />
-    </div>
+    </ScreenChrome>
 
-    <div className={styles.grid}>
-      {categoriesInOrder().map((category, index) =>
-        category.asleep ? (
-          <SleepingSlot key={category.id} category={category} />
-        ) : (
-          <CategoryCard
-            key={category.id}
-            category={category}
-            index={index}
-            onOpen={() => onOpenCategory(category)}
-          />
-        )
-      )}
-    </div>
-  </div>
+    <ScreenContent mode="fill">
+      <div className={styles.grid}>
+        {categoriesInOrder().map((category, index) =>
+          category.asleep ? (
+            <SleepingSlot key={category.id} category={category} />
+          ) : (
+            <CategoryCard
+              key={category.id}
+              category={category}
+              index={index}
+              onOpen={() => onOpenCategory(category)}
+            />
+          )
+        )}
+      </div>
+    </ScreenContent>
+  </Screen>
 )
 
 export default HomeScreen

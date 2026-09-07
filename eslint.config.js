@@ -62,4 +62,14 @@ export default defineConfig([
       globals: globals.node,
     },
   },
+  {
+    // The layout regression suite (`npm run test:layout`). It runs in node and
+    // drives a real browser, so it needs both sets of globals: node for the
+    // driver, browser for the function that is serialised into the page and
+    // evaluated there. It ships no code to the app.
+    files: ['tests/**/*.{js,mjs}'],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+    },
+  },
 ])

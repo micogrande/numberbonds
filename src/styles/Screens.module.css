@@ -13,36 +13,44 @@
    the same cream page as everywhere else, and nothing decorative competing with
    the card she is answering. */
 
-.screen {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    background: var(--color-bg);
-    padding: max(var(--spacing-sm), var(--safe-top)) var(--spacing-md)
-        max(var(--spacing-md), var(--safe-bottom));
-}
+/* .screen and .gameContainer are gone. The frame is <Screen growth="fixed">
+   and the height, the overflow and the safe-area padding belong to
+   components/screen/Screen.module.css.
 
-/* Game Screen */
-.gameContainer {
-    justify-content: flex-start;
-    /* Header at top */
-}
+   growth="fixed" is the claim that this screen's child count is a constant
+   written in this source tree, and it is: PlayScreen renders exactly one prompt
+   and exactly one input, and nothing on it repeats. Assertion E in
+   tests/layout/run.mjs proves the claim at every viewport in the matrix at or
+   above 560px tall, so the day a play screen grows a hint line the build fails
+   instead of clipping it away.
+
+   Below 560px it is released and the region scrolls, and that is a deliberate,
+   measured departure from "a game never scrolls". At 320x428 on the shipped
+   build the keypad's ENTER / 0 / DEL row sat 44px below the fold with 26px
+   visible and no scroll anywhere: she could not submit an answer at all.
+   "Strictly non-scrolling" in that range means a child who cannot play. Every
+   device in the target matrix is taller than 560, so the game never scrolls on
+   her phone; the release exists so that "too short" degrades to "scroll a
+   little" rather than to "ENTER is unreachable". */
 
 /* .header and .score moved to components/ScreenHeader.module.css — the header
    is a component now, and its styles live beside it. */
 
-/* Wrapper for the prompt + the input, centred together. */
+/* Wrapper for the prompt + the input, centred together.
+
+   <ScreenContent mode="center"> supplies the centred column, so what is left
+   here is the two spacing values, handed over as the shell's own custom
+   properties. The geometry is byte-identical to the flex column this replaces:
+   the same 24px gap, the same 24px of bottom padding, in a track that starts
+   and ends at exactly the same y. The only behavioural difference is that
+   `justify-content: center` gained a `safe center` line after it, which does
+   nothing at all until the content overflows — and then keeps every lost pixel
+   below the fold, where the region can reach it, instead of pushing half of it
+   up onto the home gate. */
 .mainContent {
-    flex: 1;
+    --content-gap: var(--spacing-lg);
+    --content-pad-end: var(--spacing-lg);
     width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding-bottom: var(--spacing-lg);
-    min-height: 0;
-    gap: var(--spacing-lg);
 }
 
 .gameArea {

@@ -1,5 +1,6 @@
 import React from 'react';
 import styles from './Summary.module.css';
+import Screen, { ScreenChrome, ScreenContent } from '../components/screen/Screen';
 import ScreenHeader from '../components/ScreenHeader';
 import { celebrateSession } from '../feedback/celebrate';
 import { formatTime } from '../lib/time';
@@ -85,10 +86,18 @@ const SummaryScreen = ({ result, onRestart, onHome }) => {
     const previousTotal = previousDenominator(previousBest, total);
 
     return (
-        <div className={styles.screen}>
-            <ScreenHeader onBack={onHome} />
+        // growth="flow". Bounded in practice, but not by a constant anyone can
+        // write down: what this screen draws varies with isNewRecord, with
+        // isFirstResult, and with whether the previous-best line wraps. If you
+        // cannot name the constant, it is flow — and the payoff is concrete, at
+        // 667x375 the Play Again button used to sit 94px below the fold with
+        // zero visible height and nothing able to scroll to it.
+        <Screen growth="flow">
+            <ScreenChrome>
+                <ScreenHeader onBack={onHome} />
+            </ScreenChrome>
 
-            <div className={styles.summaryContainer}>
+            <ScreenContent mode="center" className={styles.summaryContainer}>
                 <h2 className={styles.summaryTitle}>Session Complete!</h2>
 
                 <div className={styles.summaryScore}>
@@ -136,8 +145,8 @@ const SummaryScreen = ({ result, onRestart, onHome }) => {
                 <button className={styles.restartButton} onClick={onRestart}>
                     Play Again
                 </button>
-            </div>
-        </div>
+            </ScreenContent>
+        </Screen>
     );
 };
 

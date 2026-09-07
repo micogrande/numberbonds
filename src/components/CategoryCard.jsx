@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 
 import styles from './CategoryCard.module.css'
@@ -63,8 +63,16 @@ const CategoryCard = ({ category, index, onOpen }) => {
         whileTap={reduced ? undefined : { scale: 0.965 }}
         transition={{ type: 'spring', stiffness: 520, damping: 24 }}
       >
+        {/* The motif of a category that is still asleep is behind a dynamic
+            import (see `garden/motifs.js`), so it needs a boundary of its own.
+            `null` rather than a spinner, and HERE rather than relying on the
+            app's: suspending up there would drop the whole home screen to
+            "Getting ready…" to fetch one drawing. The pebble is already the
+            right shape and the right colour; the picture arrives into it. */}
         <span className={styles.pebble}>
-          {Motif ? <Motif className={styles.motif} /> : null}
+          <Suspense fallback={null}>
+            {Motif ? <Motif className={styles.motif} /> : null}
+          </Suspense>
         </span>
 
         {/* She reads. The word says exactly which thing it is, and the picture

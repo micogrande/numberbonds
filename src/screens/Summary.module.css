@@ -13,24 +13,16 @@
      personal-best badge  --color-text on --color-success-soft  8.37:1
      Play Again           white on --color-primary          5.10:1 */
 
-.screen {
-    height: 100%;
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    background: var(--color-bg);
-    padding: max(var(--spacing-sm), var(--safe-top)) var(--spacing-md)
-        max(var(--spacing-md), var(--safe-bottom));
-}
+/* .screen is gone — the frame is <Screen growth="flow"> and the height, the
+   overflow and the safe-area padding belong to
+   components/screen/Screen.module.css. */
 
+/* <ScreenContent mode="center"> supplies the centred column, so all that is left
+   here is the 16px gap it used to declare and the text alignment. Same track,
+   same y, same gap; the difference is that overflow now goes down into a
+   scroller instead of off both edges. */
 .summaryContainer {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    flex: 1;
-    min-height: 0;
-    gap: var(--spacing-md);
+    --content-gap: var(--spacing-md);
     text-align: center;
 }
 

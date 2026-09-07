@@ -31,10 +31,13 @@
     justify-content: center;
     flex: 0 0 auto;
 
-    /* 72px (PLAN 3.7), floored at the 44px house minimum on a very short
-       landscape viewport where a fixed 72 would eat the play area. */
-    width: clamp(56px, 9vh, 72px);
-    height: clamp(56px, 9vh, 72px);
+    /* 72px (PLAN 3.7), floored at 56px on a very short landscape viewport where
+       a fixed 72 would eat the play area — still well above the 44px house
+       minimum. The literal moved to --gate-size in styles/variables.css so the
+       chrome track can reserve exactly this band without the two numbers
+       drifting apart; the computed value is unchanged. */
+    width: var(--gate-size);
+    height: var(--gate-size);
 
     background: var(--sand);
     border: 3px solid var(--bark);

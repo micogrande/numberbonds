@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import styles from '../styles/Screens.module.css';
+import Screen, { ScreenChrome, ScreenContent } from '../components/screen/Screen';
 import ScreenHeader from '../components/ScreenHeader';
 import { assertQuestion } from '../activities/manifestSchema';
 import { resolveInput } from '../input/inputRegistry';
@@ -151,16 +152,26 @@ const PlayScreen = ({
     const busy = feedback !== 'idle';
 
     return (
-        <div className={`${styles.screen} ${styles.gameContainer}`}>
-            <ScreenHeader
-                onBack={onBack}
-                currentIndex={currentIndex}
-                total={total}
-                startTime={startTime}
-                score={score}
-            />
+        // growth="fixed", and the constant is structural rather than a number in
+        // a file: this screen renders exactly one prompt and exactly one input,
+        // and nothing on it repeats. Assertion E in tests/layout/run.mjs proves
+        // the claim at every viewport in the matrix, so a play screen that grows
+        // a third block fails the build instead of clipping it in silence.
+        //
+        // The timer and the live score pass straight through to ScreenHeader
+        // untouched — PLAN 9.1 is an owner decision, not a candidate for tidying.
+        <Screen growth="fixed">
+            <ScreenChrome>
+                <ScreenHeader
+                    onBack={onBack}
+                    currentIndex={currentIndex}
+                    total={total}
+                    startTime={startTime}
+                    score={score}
+                />
+            </ScreenChrome>
 
-            <div className={styles.mainContent}>
+            <ScreenContent mode="center" className={styles.mainContent}>
                 {question && (
                     <PlayCard
                         key={question.id}
@@ -179,8 +190,8 @@ const PlayScreen = ({
                         onSubmit={onSubmit}
                     />
                 )}
-            </div>
-        </div>
+            </ScreenContent>
+        </Screen>
     );
 };
 

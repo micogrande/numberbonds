@@ -427,29 +427,159 @@ metrics; switching the numeral face would be a regression dressed as a redesign.
 Category labels are **lowercase** — a style choice that suits the garden, not a
 literacy workaround. Don't letter-space them.
 
-### 3.3 Home screen
+### 3.3 Screen layout — the two-track shell, and the home screen
 
-The page cannot scroll (`body { overflow:hidden }`), which happily matches the
-guidance to avoid scrolling for young children. So it is a fill-the-viewport layout.
-Switch `100vh` → `100dvh` with a `100vh` fallback so the iOS URL bar does not clip
-the last row.
+> **This section was rewritten after the layout it originally specified was
+> measured on a real phone and found to destroy content.** It is the one edit to
+> this document; everything else stands. The old text said "the page cannot
+> scroll (`body { overflow:hidden }`), which happily matches the guidance to
+> avoid scrolling for young children", and reasoned from there. Two things were
+> wrong with that, and leaving them in would send the next agent back into the
+> same bug.
+>
+> **The premise.** The child-UX research behind "avoid scrolling" is about
+> *pre-readers* using *a mouse or a trackpad*. NN/g's own developmental guidance
+> lists tapping, swiping and dragging as gestures 6–8 year olds manage on a
+> touchscreen. Amelia reads fluently and uses a touchscreen; her father has
+> confirmed both. Scrolling a list is not a barrier to her.
+>
+> **The proof.** `overflow: hidden` was proved safe for the HOME grid, where
+> `grid-auto-rows: minmax(0, 1fr)` genuinely guarantees the rows compress rather
+> than overflow. It was then applied globally, on `body`, to four screens that
+> have no such guarantee — including a category list whose length comes from the
+> registry and grows every time an activity ships. Measured on the deployed
+> build at 375×554: the Numbers screen wanted 764px, clipped 210px, and because
+> the list was centred half of that loss travelled *upward* — the first activity
+> card landed on top of the home gate and won its hit test, so
+> `document.elementFromPoint` at the dead centre of the one way home returned
+> "Bonds to…". The exit started a game. At 320×428 the first card sat at y = −28
+> and the last was 120px past the fold with nothing able to reach either. Clipped
+> content behind `overflow: hidden` is also a documented WCAG 1.4.10 Reflow
+> failure, not merely an ugly one.
+
+**Fit is a goal. Reachability is an invariant.** Whether a screen fits depends on
+data — how many activities the registry holds — and data is unbounded. Whether a
+control can be *reached* must not depend on data at all. The app had the goal and
+not the invariant, which is why one extra activity turned into an unreachable
+screen rather than a slightly cramped one.
+
+Every screen is therefore the same object, `components/screen/Screen.jsx`: a
+`100svh` grid of exactly two tracks.
+
+```
+┌──────────────── <Screen growth="fixed|flow"> · 100svh · overflow: clip ──────┐
+│ padding-block-start: max(8px, env(safe-area-inset-top))                      │
+│ ┌──── track 1 · <Screen.Chrome> · auto · z-index 2 ───────────────────────┐  │
+│ │  ┌────────┐                                                             │  │
+│ │  │  GATE  │  the one way home, and the screen title                     │  │
+│ │  └────────┘                                                             │  │
+│ └─────────────────────────────────────────────────────────────────────────┘  │
+│ ┌──── track 2 · <Screen.Content> · minmax(0, 1fr) · overflow: auto ───────┐  │
+│ │  everything the screen is about. Clips and scrolls to ITSELF.           │  │
+│ └─────────────────────────────────────────────────────────────────────────┘  │
+│ padding-block-end: max(16px, env(safe-area-inset-bottom))                     │
+└──────────────────────────────────────────────────────────────────────────────┘
+```
+
+Three properties fall out of that shape, and each replaces a measured failure:
+
+- **`minmax(0, 1fr)` on the content track.** A bare `1fr` is `minmax(auto, 1fr)`
+  and `auto` means min-content, which is exactly how five 96px cards push a
+  track past the bottom of a phone and take the chrome with them. With a `0`
+  minimum the region's height is a fact about the *viewport* and never about its
+  contents.
+- **The chrome is a track, not a sibling and not `position: fixed`.** Grid tracks
+  do not overlap, so no amount of content can be laid out on top of the gate.
+  PLAN 3.7's "one 72px round button, top-left, in the identical position on every
+  non-home screen — one way home, always the same pixel" is now true *by
+  construction* rather than by five files agreeing; the only thing that can move
+  it is a safe-area inset, which is a per-device constant.
+- **`align-content: safe center`, never plain `center`.** Centring an overflowing
+  column splits the loss across *both* edges and sends half of it somewhere no
+  scroller can reach. `safe` degrades to `start` the instant content would
+  overflow, so loss only ever travels down, into the scroller.
+
+**`growth` is a claim, not a clipping mode.** `"fixed"` means the child count is a
+constant written in this source tree — home's six slots, a play screen's one
+prompt and one input. `"flow"` means it comes from data. Both scroll: every region
+is `overflow: auto`, on every viewport, including the many where everything fits
+and no scrollbar ever appears. A safety net installed only when the fall is
+predicted is not a safety net. The `"fixed"` claim is held by the layout test,
+which fails the build if such a region ever overflows.
+
+**`100svh`, never `dvh`.** The old text said to switch `100vh → 100dvh` "so the
+iOS URL bar does not clip the last row". `dvh` cannot do that here: a mobile
+browser retracts its toolbar in response to the *document* scrolling, this
+document never scrolls, so the dynamic viewport never leaves its small value and
+`100dvh` computes the identical number to `100svh` — plus a style recalculation
+on every frame of a toolbar animation that can never change anything. `svh` is
+that number, statically, and it is the pessimistic one. `body { overflow: hidden }`
+stays, because it is what pins the small viewport and keeps pull-to-refresh dead;
+it is safe now only because every screen owns its own scrolling.
+
+**Density steps down before anything scrolls.** A small stepped scale on the block
+axis (`--row-h`, `--row-gap`, and the title band) in `styles/variables.css`, gated
+on `@media (height < 780px)` and `(height < 620px)`. Height-gated, not
+orientation-gated: the `@media (orientation: landscape) and (max-height: 560px)`
+rule this replaces was the app's only layout media query and it was gated on the
+wrong term — it rescued the orientation she does not use and excluded 375×554
+portrait, which is the device the owner reported. The base step is byte-identical
+to what shipped (96px row, 24px gap), so a tall phone sees no change at all, and
+**the floor is a 72px row**: clear of WCAG 2.5.8's 44px, Material's 48dp, and at
+the 75px children's figure. Below the floor the list scrolls; it does not shrink
+further, and no future step may take it lower. Scaling content to fit (`zoom`,
+`transform: scale`) is banned on anything tappable for the same reason — it
+shrinks touch targets with no floor, turning a visible layout bug into an
+invisible mistap bug.
+
+**The scroll affordance is the cut card.** Density is tuned so that when a list
+does overflow, the last visible row is bisected by the region's bottom edge rather
+than aligned to it. A partially visible card needs no arrow, no chrome, no text
+and no JavaScript. There is no fade and no ResizeObserver; the whole layout is CSS.
+
+**Safe areas are live now.** `index.html` carries `viewport-fit=cover`, without
+which `env(safe-area-inset-*)` returns 0 on every device and `--safe-top` /
+`--safe-bottom` are tokens that look implemented and do nothing — which is what
+they were. All four insets (the inline pair is new, and is the one that matters
+in landscape) are consumed in exactly one place, the shell.
+
+**Capacity, stated rather than discovered on her phone.** Five activities now fit
+with no scrolling at all on every portrait viewport down to 375×554 and 320×568,
+and scroll — fully reachable, gate intact, last card cut — at 360×500 and 320×428.
+A category holds 5–6 activities before it starts to scroll on a normal phone and 3
+on the smallest; past that, scrolling is correct behaviour, and the signal to
+consider splitting a category rather than lengthening it. `layoutBudget.js` states
+those numbers as a tested fact and `npm run test:layout` measures them in a real
+browser at seventeen viewports.
+
+#### The home screen
+
+Unchanged, and it is the one screen that never had this problem: `growth="fixed"`
+is legitimate here precisely because `grid-auto-rows: minmax(0, 1fr)` guarantees
+compression. Its geometry is preserved to the pixel and the layout test holds it
+to ±1px against measurements taken before the shell existed.
 
 1. **Header band**, `clamp(96px, 17vh, 150px)` — "welcome amelia" in Baloo 800, two
    lines, with *amelia* in blush. A bunny at ~56px peeks over the top-right, ears
    breaking the line. A 3px hand-drawn grass baseline runs full width underneath,
    planting the header on the ground without a rule or a card.
-2. **Grid**, `flex:1`, two columns always, `grid-auto-rows: minmax(0,1fr)`, three
-   rows, six cards. No `aspect-ratio` — let the row be `1fr` so the grid compresses
-   instead of overflowing on a short device. Smallest computed card is 141×123 at
-   320×568, which is roughly double the 75px guidance for children and triple the
-   44px house floor. At ≥600px, `max-width:560px; margin-inline:auto` so tablet
-   cards don't stretch into letterboxes.
+2. **Grid**, filling the content track, two columns always,
+   `grid-auto-rows: minmax(0,1fr)`, three rows, six cards. No `aspect-ratio` — let
+   the row be `1fr` so the grid compresses instead of overflowing. Smallest
+   computed card is 141×123 at 320×568, which is roughly double the 75px guidance
+   for children and triple the 44px house floor. At ≥600px,
+   `max-width:560px; margin-inline:auto` so tablet cards don't stretch into
+   letterboxes.
 3. **Bottom: nothing interactive.** Children mis-tap bottom-edge controls. Two
-   overlapping sage hills bleed off the bottom edge, `pointer-events:none`.
+   overlapping sage hills bleed off the bottom edge, `pointer-events:none`. This
+   is also what keeps the home indicator's ~34px inset harmless once the app is
+   added to a home screen.
 4. **Ambient layer** behind the cards: two butterflies on coprime 18s/26s paths so
    they never sync into a pattern. They pass *behind* the cards, which is what makes
    the page feel like a place rather than a screen. Paused in-game and on
-   `visibilitychange`.
+   `visibilitychange`. It stays `position: absolute` inside the shell and never
+   `fixed`: Safari 26 samples the background of fixed and sticky elements near the
+   viewport edges — including invisible ones — to tint its own toolbar.
 
 Numbers is pinned top-left and never moves.
 

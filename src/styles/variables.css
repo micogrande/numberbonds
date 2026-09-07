@@ -138,9 +138,113 @@
 
   /* env() carries its own 0px fallback: these are read inside max(), and a
      browser without env() would make the whole max() invalid and drop the
-     padding with it. */
+     padding with it.
+
+     All four return 0px unless index.html carries `viewport-fit=cover`. They
+     did exactly that for the whole of this app's life, on every device, which
+     is why nothing appeared to be wrong with them. The meta key and the
+     padding that consumes it landed in the same commit — do not separate them,
+     because the meta key alone trades zero insets for content under a notch. */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
+  /* The inline pair was missing entirely, and it is the one that matters in
+     landscape: a notch sits on one INLINE edge there, never both. Always
+     padded asymmetrically with max() per side, never max() of the pair. */
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+
+  /* ═══ the block axis ═════════════════════════════════════════════════════
+     The fluid clamp() TYPE scale above is width-indexed: `vw` cannot tell a
+     390x844 phone from a 390x554 one, and at every phone width from 320 to 430
+     CSS px all six of those clamps sit at or within ~1.5px of their MINIMUM. It
+     is correctly built and it is inert on the devices Amelia uses, so it is not
+     the axis in play here and nothing below touches it.
+
+     ANY NEW TYPE TOKEN must keep a dominant `rem` term and a maximum no more
+     than 2.5x its minimum. Pure viewport-unit text is WCAG failure F94: it does
+     not respond to browser zoom, so SC 1.4.4's 200% is unreachable. All six
+     existing tokens comply.
+
+     Height gets a STEPPED scale of its own instead, below. Stepped rather than
+     fluid on purpose: a stepped scale has N states and N is testable, and this
+     is exactly the moment you need to prove a screen fits.
+     ════════════════════════════════════════════════════════════════════════ */
+
+  /* The one way home. PLAN 3.7 asks for 72px; the 56px floor is for a very
+     short landscape viewport where a fixed 72 would eat the play area, and it
+     is still well above the 44px house minimum and WCAG 2.5.8.
+
+     This is the ONE viewport-height unit outside Screen.module.css, and it is
+     deliberate rather than an oversight: the gate is CHROME, and chrome is
+     indexed to the DEVICE on purpose. "Always the same pixel" is a promise
+     about her phone, not about a slot. `vh` and not `svh` because vh is the
+     LARGE viewport, which is what keeps the gate at its full 72px on a real
+     phone rather than shrinking it to ~64 whenever the URL bar shows.
+     components/screen/contract.test.js knows about this one and no other. */
+  --gate-size: clamp(56px, 9vh, 72px);
+  --gate-band: calc(var(--gate-size) + 2 * var(--spacing-xs));
+
+  /* A growing list of activity rows. The base row is 96px with a 24px gap and
+     24px of padding — byte-identical to what the category screen has always
+     shipped, so on a tall phone nothing moves at all. The two steps below only
+     engage on viewports where the screen was already clipping.
+
+     THE FLOOR IS 72px AND NOTHING GOES UNDER IT. That clears WCAG 2.5.8 (44px),
+     Material's 48dp, and sits at PLAN 3.3's own 75px children's figure. Below
+     the floor the list SCROLLS instead of shrinking — see the two declarations
+     in Screen.module.css that are the whole scroll policy. Do not add a fourth,
+     tighter step: the answer to "it still does not fit" is the scroller, not a
+     smaller target in a six-year-old's hands. */
+  --row-h: 96px;
+  --row-gap: var(--spacing-lg);
+  --row-pad-y: var(--spacing-lg);
+  --row-pad-x: var(--spacing-lg);
+  /* The last row stops short of the edge rather than sitting on it, because
+     children mis-tap bottom-edge controls (PLAN 3.3). */
+  --list-pad-end: var(--spacing-xl);
+
+  /* A screen title is chrome: it never scrolls, so it is a fixed cost taken out
+     of the height budget before the list gets a share. On a short viewport that
+     cost comes down. */
+  --screen-title-fs: var(--fs-display);
+  --screen-title-mt: var(--spacing-sm);
+  --screen-title-mb: var(--spacing-lg);
+
+  /* The gutter, and the screen's own bottom margin. Screens override the second
+     one; home wants 8px where every other screen wants 16px. */
+  --gutter: var(--spacing-md);
+  --screen-pad-end: var(--spacing-md);
+}
+
+/* Two steps, and only two. Height-gated, NOT orientation-gated: every failure
+   this replaced was a height failure, and the `(orientation: landscape)` query
+   it deletes protected the orientation she does not use while excluding
+   375x554 portrait, which is the device the owner actually reported. */
+@media (height < 780px) {
+  :root {
+    --row-h: 80px;
+    --row-gap: var(--spacing-md);
+    --row-pad-y: 14px;
+    --row-pad-x: 20px;
+    --list-pad-end: 20px;
+    --screen-title-fs: var(--fs-h2);
+    --screen-title-mt: var(--spacing-xs);
+    --screen-title-mb: 12px;
+  }
+}
+
+@media (height < 620px) {
+  :root {
+    --row-h: 72px;
+    --row-gap: 12px;
+    --row-pad-y: 10px;
+    --row-pad-x: var(--spacing-md);
+    --list-pad-end: 12px;
+    --screen-title-mb: var(--spacing-sm);
+  }
+}
+
+:root {
 
   /* Every ambient (unprompted, decorative, infinite) animation reads this — one
      property stops all of them at once, and touches no feedback animation.

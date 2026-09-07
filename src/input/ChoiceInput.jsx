@@ -44,15 +44,45 @@ import { choiceKey, choiceState } from './choiceRules'
  *
  * ── WHY THERE IS NO framer-motion IN HERE ───────────────────────────────────
  *
- * This adapter is reachable from the manifest layer, which is eager: the
- * registry knows every activity before she has touched anything. Importing
- * framer-motion here put 115kB of it into the FIRST chunk she downloads,
- * measured — the one thing `number-bonds/index.js` says the code-splitting
- * boundary exists to prevent. Every state below is therefore an attribute on the
- * element and a keyframe in the stylesheet, which costs nothing, cannot be late,
- * and keeps the whole animation library behind the dynamic import where the
- * prompt renderers already live. Confetti on a correct answer is unchanged; it
- * belongs to the session, not to this file.
+ * **Not for the reason that used to be written here.** The old note said that
+ * importing framer-motion in this file would put 115kB of it into the first
+ * chunk she downloads. That was true when it was written and is not true now:
+ * PLAN 3.4 gives the home screen's category cards a release spring, so
+ * `components/CategoryCard.jsx` imports framer-motion, and `HomeScreen` →
+ * `Shell` → `App` → `main.jsx` is a chain of static imports. The library is in
+ * the boot chunk before this file has an opinion. Measured on the current build:
+ * the entry chunk is 362.43 kB with it and 246.30 kB without — 116 kB, 38 kB
+ * gzipped, and the first screen she ever sees already pays all of it.
+ * `bootChunk.test.js` now asserts that, so the claim cannot rot again unnoticed.
+ *
+ * The other half of the old note still holds and is worth keeping: this adapter
+ * IS eagerly reachable. `manifestSchema.js` imports the input registry to
+ * validate `inputMode`, and every manifest is loaded at boot, so `ChoiceInput`
+ * is in the first chunk whether or not she ever plays a multiple-choice game.
+ * It just no longer follows that its imports are free to be expensive — they
+ * are, and being careful here is now a matter of not making the entry chunk
+ * *worse*, not of keeping a boundary that exists.
+ *
+ * So the decision was re-taken on what is left, and it is unchanged:
+ *
+ *   - **Latency.** This is the inner loop of the play screen, where the house
+ *     rule is an answer to every tap within ~100ms. Four `motion.button`s stay
+ *     mounted for the whole session, each subscribing to the motion runtime, to
+ *     run animations that are already a pure function of two props.
+ *   - **There is nothing framer-motion would express better.** Shake, dim and
+ *     light-green are declarative state, not gesture: `data-state` on the button
+ *     plus keyframes in `ChoiceInput.module.css` say the same thing, start on
+ *     the frame the attribute changes, and cannot arrive a tick late. Compare
+ *     `CategoryCard`, which genuinely needs both — CSS `:active` for the depress
+ *     and framer-motion for the release spring, on different elements and
+ *     different properties, because a spring is not expressible in a keyframe.
+ *   - **Reduced motion is already right.** The stylesheet swaps the shake for a
+ *     colour pulse under `prefers-reduced-motion` (PLAN 3.4: feedback never
+ *     disappears, only motion does). That is four lines of CSS, not a prop
+ *     threaded through four buttons.
+ *
+ * Confetti on a correct answer is unchanged; it belongs to the session, not to
+ * this file.
  *
  * ── ART ─────────────────────────────────────────────────────────────────────
  *

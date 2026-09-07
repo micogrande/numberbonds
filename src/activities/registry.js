@@ -79,9 +79,14 @@ export function findOption(activity, optionId) {
  * always has at least one option (`defineActivity` refuses an empty list).
  *
  * The preference is how PLAN 5's last low-severity bug — "target resets to 10 on
- * every return home" — stops happening. Step 9 (`prefs.js`) makes that memory
- * survive a reload; until then it survives the walk home and back, which is the
- * trip she actually makes.
+ * every return home" — stops happening. `App.jsx` holds it in state for the walk
+ * home and back, and `storage/prefs.js` (step 9) mirrors it to
+ * `amelia.prefs.v1` so it survives a reload too.
+ *
+ * A preferred id that no longer resolves is not an error here, and that is what
+ * lets `prefs.js` store an id without ever validating it against the registry: a
+ * stored option that a later recipe change deleted costs her one wrong
+ * pre-selection, not a broken screen.
  *
  * @param {import('./manifestSchema').ActivityManifest} activity
  * @param {string} [preferredOptionId]

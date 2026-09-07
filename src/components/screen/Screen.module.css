@@ -1,0 +1,290 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   THE SCREEN CONTRACT.  (PLAN 3.3)
+
+   This is the ONLY file in the app allowed to declare `overflow`, a screen
+   height, or a viewport unit. `contract.test.js` fails the build if a second
+   one does, and it names the two deliberate exceptions.
+
+   The rule a future agent follows, with no judgement in it:
+
+     1. A screen's root element is <Screen growth="fixed|flow">. There is no
+        other option, and `growth` is required.
+     2. Inside it, in this order: <Screen.Chrome> then <Screen.Content>. Content
+        is required; Chrome is required on every screen except home, which has
+        nowhere to go home to.
+     3. growth="fixed" is permitted ONLY if you can write a comment naming the
+        constant that bounds the child count, and that constant is a literal in
+        this source tree — not registry.js, not a manifest, not options.length.
+        If you cannot name it, it is "flow". It is a CLAIM the layout test
+        holds you to, not a clipping mode: every region scrolls.
+     4. No screen module declares `overflow`, `height: 100%`, `100vh/dvh/svh`,
+        `min-height: 100…`, or `position: fixed`. Those live here.
+     5. `justify-content: center` and `align-content: center` are BANNED on any
+        box that can overflow. Use the two-line pair — `start` first, then
+        `safe center` — so a browser without overflow alignment keeps the safe
+        value.
+     6. Anything tappable takes its size from --row-h / --gate-size, never from
+        a px literal, and no density step may put any of them below 44px.
+     7. If `npm run test:layout` is red, the screen is wrong. It is never the
+        test.
+
+   Fit is a goal. Reachability is an invariant. Whether a screen fits depends on
+   data — how many activities the registry holds — and data is unbounded. Whether
+   a control can be reached must not depend on data at all.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.screen {
+    /* svh, NOT dvh, and the 100vh line above it is the pre-2022 fallback that
+       costs nothing.
+
+       `dvh` is not extra room here. A mobile browser retracts its toolbar in
+       response to the DOCUMENT scrolling; this app's document never scrolls
+       (body { overflow: hidden } in index.css) and an inner region's scroll does
+       not move the toolbar. So the toolbar never retracts, the dynamic viewport
+       never leaves its small value, and 100dvh computes the identical number to
+       100svh on every device in every state — plus a style recalculation on
+       every frame of a toolbar animation that can never change anything.
+
+       svh is that same number, statically, and it is the pessimistic one: a
+       layout that fits 100svh fits in every chrome state a phone has.
+
+       The comment this replaces (index.css:29-32) credited dvh with putting the
+       last row on screen. That is only ever true of a page that scrolls, and
+       this one deliberately does not. */
+    height: 100vh;
+    height: 100svh;
+    width: 100%;
+
+    /* TWO TRACKS. The `0` in minmax(0, 1fr) is the load-bearing character in
+       this file: a bare `1fr` is minmax(auto, 1fr), and `auto` means min-content
+       — which is exactly how five 96px cards push a track past the bottom of a
+       phone and take the chrome with them. With a 0 minimum the content track
+       can never exceed the space the shell has, so its height is a fact about
+       the VIEWPORT and never about its contents. */
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--screen-row-gap, 0px);
+
+    position: relative;
+    isolation: isolate;
+    background: var(--color-bg);
+
+    /* `clip`, not `hidden`: it creates no scroll container at all, so a stray
+       scrollTop or a framer-motion scrollIntoView has nothing to act on. This is
+       belt and braces — nothing should ever reach it, and assertion A in
+       tests/layout/run.mjs proves the document never scrolls. */
+    overflow: clip;
+
+    /* The block insets live here. The INLINE ones deliberately do not: they are
+       on .chrome and .content instead, so the scroller's clip edge is the
+       viewport edge and a card's slab shadow has the gutter to bleed into
+       rather than being sliced off by the scroll box. */
+    padding-block-start: max(var(--spacing-sm), var(--safe-top));
+    padding-block-end: max(var(--screen-pad-end), var(--safe-bottom));
+}
+
+/* ─── track 1 · chrome ────────────────────────────────────────────────────────
+   Never scrolls, never moves, and content cannot enter it. z-index is belt and
+   braces on top of the track rule: even an absolutely-positioned child that
+   escaped its track would paint UNDER the gate and lose the hit test rather
+   than winning it, which is precisely what happens on the shipped build.
+
+   Not `position: fixed`, for three reasons: a fixed element floats OVER content
+   rather than reserving space, Safari 26 samples the background of fixed and
+   sticky elements near the viewport edge to tint its own toolbar, and a size
+   container was historically a containing block for fixed descendants. A track
+   has none of those problems. */
+.chrome {
+    grid-row: 1;
+    position: relative;
+    z-index: 2;
+    /* The band exists with or without a title, so the gate sits at the same y on
+       a category screen and a play screen. */
+    min-block-size: var(--gate-band);
+    padding-inline-start: max(var(--gutter), var(--safe-left));
+    padding-inline-end: max(var(--gutter), var(--safe-right));
+}
+
+/* ─── track 2 · content ───────────────────────────────────────────────────── */
+.content {
+    grid-row: 2;
+    position: relative;
+    z-index: 1;
+    /* The other half of minmax(0, 1fr): without it a grid item's automatic
+       minimum size is min-content and the track refuses to shrink. */
+    min-block-size: 0;
+    min-inline-size: 0;
+
+    padding-inline-start: max(var(--gutter), var(--safe-left));
+    padding-inline-end: max(var(--gutter), var(--safe-right));
+
+    /* ══ THE ENTIRE SCROLL POLICY, IN TWO DECLARATIONS ══════════════════════
+       `auto` IS the conditional. Above the density floor the rows fit, and auto
+       shows nothing, does nothing and changes nothing — the screen fills the
+       viewport exactly as PLAN 3.3 intends. At the floor the rows stop
+       shrinking, the region overflows, and auto engages. Scrolling is what
+       happens when density is spent; it is not a mode any screen chooses.
+
+       Both axes on purpose. The 3-20 target grid is 18 buttons of 50px in six
+       columns — an owner decision, frozen at that size (PLAN 9.2) — and six
+       columns need 340px of row. On a phone narrower than 356 CSS px that row
+       is wider than the page, and on the shipped build buttons 8, 14 and 20 sat
+       36px off the right edge with no way to reach them. Not one number inside
+       that grid changes; the BOX around it is allowed to scroll instead.
+
+       `contain` and not `none`: chaining stops at the region so pull-to-refresh
+       stays dead (PLAN 2.5), while iOS rubber-banding inside the region
+       survives — that bounce is the feedback that says "this is the end". */
+    overflow: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+
+    scrollbar-width: none;
+    scroll-padding: var(--spacing-sm);
+}
+
+.content::-webkit-scrollbar {
+    display: none;
+}
+
+/* ── AND NO OPT-OUT, WHICH IS A DELIBERATE DEPARTURE FROM THE PROPOSAL ───────
+   The winning design had growth="fixed" clip its region (`overflow: hidden`),
+   with a height-gated release below 560px. I built that, measured it, and took
+   it out, because measurement said it was strictly worse:
+
+     · When a region's content fits, `auto` and `hidden` are indistinguishable —
+       no scrollbar, no scroll surface, no layout difference, nothing. So the
+       clip buys nothing on the screens where the claim is TRUE.
+     · When it does not fit, the clip DESTROYS content and the scroller does
+       not. Measured: at 320x568 the number bonds play screen needs 523px of
+       region and has 480 — the fixed 186x158 bond diagram plus a 317px keypad —
+       so `hidden` cut 43px off the bottom of the keypad, which is the ENTER row.
+       The shipped build got away with it only by letting the centred stack
+       overlap the header band instead.
+
+   So every region is `auto`, and `growth` is a CLAIM checked by the test rather
+   than a clipping mode. Assertion E asserts a `fixed` region does not overflow;
+   a play screen that grows a third block fails the build exactly as intended,
+   and in the meantime nothing in this app can ever clip a control away.
+
+   That also deletes the 560px magic number and the whole
+   `@media (orientation: landscape) and (max-height: 560px)` rule it came from —
+   the one that was gated on the wrong axis in the first place. */
+
+/* One child, stretched to the whole track.
+
+   The explicit COLUMN track is not optional: a grid with no
+   `grid-template-columns` gets an implicit `auto` one sized to MAX-CONTENT, and
+   a long activity label then lays the region out wider than the phone with no
+   vertical symptom to hint at the cause.
+
+   The ROW stays `minmax(0, 1fr)`. A `min-content` minimum was tried and
+   measured and is wrong here: it let the track grow past the region on screens
+   that fit perfectly well (a 5-7px overflow at 320x568, 375x554, 375x812 and
+   360x640) and it moved the home grid on every short viewport. The child being
+   clamped to the track is the correct behaviour; what the clamp costs is one
+   card's slab shadow at maximum scroll, which is written up on `.list` below. */
+.fill {
+    display: grid;
+    grid-template-rows: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr);
+}
+
+/* A centred stack — the play screen, the summary, the option picker.
+
+   `safe center` is the whole difference between a screen that is too tall and a
+   screen that is destroyed. Plain `center` splits overflow across BOTH edges, so
+   half of it climbs off the top where no scroller can reach it and lands on the
+   home gate. `safe` behaves as `start` the moment content would overflow, so
+   loss only ever goes down. The plain `center` line above it is the fallback for
+   a browser without overflow alignment, and it is written first on purpose. */
+.center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    justify-content: safe center;
+    gap: var(--content-gap, 0px);
+    padding-block-end: var(--content-pad-end, 0px);
+}
+
+/* ─── the growing list ────────────────────────────────────────────────────────
+   `grid-auto-rows: minmax(var(--row-h), auto)` rather than a min-height on the
+   child. Rows are never shorter than the density floor and grow for a wrapped
+   subtitle — and crucially they do NOT compress, so a density step can never
+   silently take a row below 44px, and a longer subtitle can never be squeezed
+   out of its own padding.
+
+   The rule this replaces was `.activity { min-height: 96px; flex: 0 1 auto }`
+   with the comment "three activities land here when arithmetic ships and the
+   page still may not scroll". Flex-shrink cannot go below an explicit
+   min-height, so it absorbed nothing — measured, at 320x568 every row was
+   pinned to 96px while its own content needed 116, and the subtitle spilled out
+   of the padding.
+
+   `align-content` is the two-line safe pair again: centred when the list fits,
+   which is what the screen has always looked like, and top-aligned the instant
+   it does not, so every pixel of overflow is inside the scroller. */
+.list {
+    display: grid;
+    grid-auto-rows: minmax(var(--row-h), auto);
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--row-gap);
+    align-content: start;
+    align-content: safe center;
+
+    width: 100%;
+    max-width: 480px;
+    margin-inline: auto;
+
+    /* Fill the region so `align-content: safe center` above has something to
+       centre the rows in, which is what the screen has always looked like. */
+    min-block-size: 100%;
+
+    /* The bottom of a screen is where children mis-tap, so the last row stops
+       short of the edge rather than sitting on it (PLAN 3.3).
+
+       KNOWN LIMIT, measured, and left alone deliberately: this padding is real
+       while the rows FIT and is clamped away while they do not, because the list
+       is a grid item stretched to a track whose height is fixed by the shell. So
+       at maximum scroll on a short viewport the last card meets the region's
+       edge and its 6px slab shadow is cut. Two fixes were built and measured and
+       both were worse: moving the padding onto the scroller does nothing (a
+       descendant's *content* overflow does not pick up a scroller's end padding
+       the way its *border box* does), and `align-self: start` to unclamp the list
+       made 375x554 overflow by 5px where it had fitted exactly, because the
+       percentage minimum then resolves against a track the item is itself
+       sizing. A cut shadow at the very end of a scroll is a smaller price than
+       either, and it reads as "the list ends here". */
+    padding-block-end: var(--list-pad-end);
+}
+
+/* ─── the screen title ────────────────────────────────────────────────────────
+   Chrome, so it is a fixed cost taken out of the budget before the list gets a
+   share — and on a short viewport that cost steps down with the density scale
+   instead of pushing the list off the bottom. */
+.title {
+    font-family: var(--font-display);
+    font-size: var(--screen-title-fs);
+    font-weight: 800;
+    line-height: 1;
+    color: var(--color-text);
+    text-align: center;
+    text-transform: lowercase;
+    margin-block: var(--screen-title-mt) var(--screen-title-mb);
+}
+
+/* ─── the scroll affordance ───────────────────────────────────────────────────
+   There is deliberately NO fade and NO JavaScript here. The affordance is the
+   CUT CARD: the density steps are tuned so that when the list overflows, the
+   last visible row is bisected by the region's bottom edge rather than aligned
+   to it. A partially visible card needs no arrow, no chrome, no text and no
+   ResizeObserver, and assertion F in tests/layout/run.mjs asserts it rather than
+   hoping for it.
+
+   If you are tempted to add a gradient: it must be `position: absolute` inside
+   this positioned shell and never `position: fixed` or `sticky`, because Safari
+   26 samples the background-color and backdrop-filter of fixed and sticky
+   elements near the viewport edges — including invisible ones — to tint its own
+   toolbar. A fixed fade would turn the browser chrome sage green. */

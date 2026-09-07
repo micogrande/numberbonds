@@ -30,6 +30,15 @@ import { mulberry32 } from '../../lib/rng'
  * not of one lucky arrangement. The seeds are fixed constants, so this file is
  * deterministic: it either passes forever or fails on the first run.
  *
+ * Two hundred scattered seeds are not enough for one of those properties. "No
+ * two cards in a row share an answer" used to fail on about one addition deck in
+ * a thousand, and a 200-seed sample of a 1-in-1010 defect passes by luck roughly
+ * four times in five — which is exactly what it did. That property therefore has
+ * its own sweep (`SWEEP`) over a contiguous range wide enough that the broken
+ * pass failed twenty times inside it, plus two hand-built fixtures that pin the
+ * two ways it broke without depending on a seed at all. See
+ * `fixAdjacentAnswers`' notes in the engine.
+ *
  * The shared `activities/registry.test.js` already covers what every activity
  * owes the contract — deck size against the manifest, unique card ids, card
  * shape, determinism under a seed, no `Math.random`. Some of those are repeated
@@ -38,6 +47,23 @@ import { mulberry32 } from '../../lib/rng'
 
 const SEEDS = Array.from({ length: 200 }, (_, index) => 20260906 + index * 7919)
 const seeded = (seed) => mulberry32(seed)
+
+/**
+ * The contiguous range the adjacent-answer sweep runs over: seeds 1 … 20000.
+ *
+ * Contiguous rather than scattered so that the range is a statement anyone can
+ * re-check by hand, and 20000 rather than 200 because that is the number that
+ * makes the sweep evidence instead of a coin toss. Measured against the pass as
+ * it was before this range existed: **20 of these 20000 addition decks shipped
+ * two consecutive cards with the same answer** — 28 repeats in all, since eight
+ * of those decks carried two — the first at seed 881. A sweep that a broken pass
+ * fails twenty times over cannot pass by luck.
+ *
+ * Subtraction has never produced one — it pins slots 11 *and* 12, so its B/C
+ * seam cannot clash — and is swept anyway, because "this op happens not to hit
+ * the bug" is a fact about today's reserved slots rather than a rule.
+ */
+const SWEEP = 20000
 
 const PARAMS = {
   [OPS.ADD]: { op: OPS.ADD, max: MAX },
@@ -249,6 +275,33 @@ describe.each([
         ).not.toBe(answers[index - 1])
       }
     }
+  })
+
+  it(`still never does, over ${SWEEP} contiguous seeds`, () => {
+    // The same property as the test above, swept wide enough to be evidence
+    // rather than a sample. See SWEEP: the pass this replaces failed 20 times
+    // inside this exact range, and the 200 scattered seeds above caught none of
+    // them.
+    //
+    // The failures are reported all at once rather than on the first one,
+    // because "seeds 881, 2661, 2681 …" says which SHAPE of deck breaks and a
+    // single seed does not.
+    const failures = []
+
+    for (let seed = 1; seed <= SWEEP; seed++) {
+      const deck = generate(PARAMS[op], seeded(seed))
+
+      for (let index = 1; index < deck.length; index++) {
+        if (deck[index].answer === deck[index - 1].answer) {
+          failures.push(`seed ${seed} at slot ${index} (${deck[index].prompt.text} answers ${deck[index].answer} too)`)
+        }
+      }
+    }
+
+    expect(
+      failures.slice(0, 10),
+      `${failures.length} repeated answers across ${SWEEP} decks — first ten shown`
+    ).toEqual([])
   })
 
   it('deals the same deck twice from the same seed, and different decks from different seeds', () => {
@@ -521,6 +574,94 @@ describe('fixAdjacentAnswers', () => {
   it('leaves a clean block exactly as it found it', () => {
     const clean = block(1, 2, 3, 4, 5, 6)
     expect(fixAdjacentAnswers(clean, new Set(), seeded(6))).toEqual(clean)
+  })
+
+  // ── the two ways this pass used to fail ───────────────────────────────────
+  //
+  // Both are hand-built rather than seeded, so they keep testing what they are
+  // named for however the draw above it changes. The seeds that produced them
+  // are named in the comments, and swept for separately.
+
+  it('repairs a clash against a pinned slot that no single swap can reach', () => {
+    // Seed 881's addition deck, as it comes off the draw. Slot 12 is reserved
+    // for a double over ten (PLAN 4.2) and may not move, so the clash at the
+    // B/C seam has exactly one movable side — slot 11 — and block B is allowed
+    // two cards answering 16. Every one of the four legal single swaps out of
+    // slot 11 just moves the clash somewhere else inside block B:
+    //
+    //     11 ↔ 7   13 16 19 16 15 15   the new 15 lands next to the old one
+    //     11 ↔ 8   13 15 16 16 15 19   16 next to 16
+    //     11 ↔ 9   13 15 19 16 15 16   the two cards are interchangeable
+    //     11 ↔ 10  13 15 19 16 16 15   16 next to 16
+    //
+    // so a pass that only ever swaps one card gives up here, and one addition
+    // deck in about a thousand shipped a repeated answer. Two cards have to
+    // move at once, which is why the unit of repair is now the block.
+    const laid = block(9, 6, 10, 9, 4, 7, 13, 15, 19, 16, 15, 16, 16, 12, 13, 12, 13, 14)
+    const pinned = new Set([4, 6, 12])
+
+    expect(clashes(laid), 'the fixture must start with the clash it is named for').toBe(1)
+
+    const fixed = fixAdjacentAnswers(laid, pinned, seeded(881))
+
+    expect(clashes(fixed)).toBe(0)
+
+    // The reserved slots are the coverage guarantee and none of them moved.
+    for (const slot of pinned) expect(fixed[slot], `slot ${slot}`).toBe(laid[slot])
+
+    // Every card is still in its own block: A → B → C is the point of the deck.
+    for (let start = 0; start < laid.length; start += BLOCK_SIZE) {
+      const before = laid.slice(start, start + BLOCK_SIZE).map((card) => card.answer).sort((x, y) => x - y)
+      const after = fixed.slice(start, start + BLOCK_SIZE).map((card) => card.answer).sort((x, y) => x - y)
+
+      expect(after, `block at ${start}`).toEqual(before)
+    }
+  })
+
+  it('fixes the clashes it can even when an earlier one is impossible', () => {
+    // Seed 2661's deck has two clashes, at slots 12 and 17. The pass used to
+    // stop the moment the LEFTMOST one proved unrepairable, so the second one —
+    // an ordinary repeat inside block C, fixable by moving one card — was never
+    // even attempted.
+    //
+    // Made explicit here: block B is six cards that all answer 16 against a
+    // pinned 16 at slot 12, which genuinely cannot be arranged. Block C's
+    // repeated 3s can. An unfixable clash must cost only itself.
+    const laid = block(1, 2, 3, 4, 5, 6, 16, 16, 16, 16, 16, 16, 16, 3, 3, 5, 6, 7)
+    const pinned = new Set([12])
+
+    expect(clashes(laid)).toBe(7)
+
+    const fixed = fixAdjacentAnswers(laid, pinned, seeded(2661))
+
+    // Six of the seven survive — the five inside block B and the seam it cannot
+    // move away from. The seventh, the one that was reachable, is gone.
+    expect(clashes(fixed)).toBe(6)
+    expect(clashes(fixed.slice(12)), 'block C still repeats an answer').toBe(0)
+
+    // The impossible block was left exactly as it was rather than churned.
+    expect(fixed.slice(6, 12).map((card) => card.answer)).toEqual([16, 16, 16, 16, 16, 16])
+    expect(fixed[12]).toBe(laid[12])
+  })
+})
+
+describe('the two seeds whose decks used to ship a repeated answer', () => {
+  // Kept as named regressions beside the sweep. The sweep says the defect class
+  // is gone; these two say the exact reported cases are, and they are cheap
+  // enough to read: 881 is the unrepairable pinned seam, 2661 is the seam plus
+  // a second clash that the old pass abandoned along with it.
+  it.each([
+    [881, 'a clash at slot 12, the pinned B/C seam'],
+    [2661, 'clashes at slots 12 and 17, of which 17 was never attempted'],
+  ])('seed %d dealt %s', (seed) => {
+    const deck = generate(PARAMS[OPS.ADD], seeded(seed))
+
+    for (let index = 1; index < deck.length; index++) {
+      expect(
+        deck[index].answer,
+        `slot ${index}: ${deck[index - 1].prompt.text} then ${deck[index].prompt.text}`
+      ).not.toBe(deck[index - 1].answer)
+    }
   })
 })
 

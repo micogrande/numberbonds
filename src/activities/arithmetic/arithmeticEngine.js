@@ -127,10 +127,17 @@ const MAX_SUBTRAHEND = 9
  * be arranged so that no two of them are neighbours, and a repair pass faced
  * with that either loops, throws in her face, or gives up silently.
  *
- * Capping an answer at two per block makes an unrepairable block impossible (any
- * multiset of six with no answer appearing more than three times can be laid out
- * with no two alike adjacent), and it costs nothing: every block has at least
- * eight distinct answers available, so the cap never empties a pool.
+ * Capping an answer at two per block makes an unrepairable *block* impossible
+ * (any multiset of six with no answer appearing more than three times can be
+ * laid out with no two alike adjacent), and it costs nothing: every block has at
+ * least eight distinct answers available, so the cap never empties a pool.
+ *
+ * What the cap does NOT buy, and used to be credited with: a guarantee that the
+ * fix-up pass always succeeds. Two blocks meet at a seam, one side of that seam
+ * can be a reserved slot that may not move, and the cap says nothing about
+ * either. That gap shipped a repeated answer once in about a thousand addition
+ * decks until the pass learned to rearrange a whole block — see
+ * `fixAdjacentAnswers`.
  *
  * It does not make the fix-up pass decoration either. Six cards drawn from eight
  * to ten possible answers repeat one almost every time — measured over a
@@ -305,9 +312,6 @@ const RECIPES = Object.freeze({
 /** Where block `n` starts in the deck. */
 const blockStart = (index) => index * BLOCK_SIZE
 
-/** Which block a deck index falls in. Blocks are contiguous and equal-sized. */
-const blockOfIndex = (index) => Math.floor(index / BLOCK_SIZE)
-
 /** The first slot of block B, and the slot its orientation flips at (PLAN 4.2). */
 const B_START = blockStart(BLOCK_ORDER.indexOf(BLOCKS.B))
 const B_FLIPS_AT = B_START + 4
@@ -423,6 +427,119 @@ function adjacentClashes(cards) {
   return clashes
 }
 
+/** How many blocks a deck of this length is laid out in. */
+const blockCount = (length) => Math.ceil(length / BLOCK_SIZE)
+
+/**
+ * Does a clash sit anywhere this block could move it?
+ *
+ * A clash at index `i` is the pair `(i - 1, i)`. Rearranging one block can only
+ * change the pairs whose slots it owns plus the two seams either side of it, so
+ * the pairs it can touch are exactly those with `i` in `[start, end]`. A block
+ * with none of them clashing has nothing to gain from being rearranged, which is
+ * what keeps the search below off the two blocks that are already fine.
+ *
+ * @param {Fact[]} cards
+ * @param {number} blockIndex
+ * @returns {boolean}
+ */
+function touchesClash(cards, blockIndex) {
+  const start = blockStart(blockIndex)
+  const end = Math.min(start + BLOCK_SIZE, cards.length)
+
+  for (let index = Math.max(start, 1); index <= Math.min(end, cards.length - 1); index++) {
+    if (cards[index].answer === cards[index - 1].answer) return true
+  }
+
+  return false
+}
+
+/**
+ * Every ordering of `items`, one at a time.
+ *
+ * The caller only ever passes one block's movable cards, so the whole space is
+ * at most `BLOCK_SIZE!` = 720 orderings of six. Enumerating it is what makes the
+ * pass *exact*: it finds a clean arrangement whenever one exists, rather than
+ * whenever a hill-climb happens to find a single swap that improves things.
+ *
+ * A generator rather than an array because the caller stops at the first clean
+ * arrangement it sees, and its source order is shuffled — so the common repair
+ * looks at a handful of orderings and never builds the other seven hundred.
+ *
+ * @template T
+ * @param {readonly T[]} items
+ * @yields {T[]}
+ */
+function* permutations(items) {
+  if (items.length <= 1) {
+    yield [...items]
+    return
+  }
+
+  for (let index = 0; index < items.length; index++) {
+    const rest = items.filter((_, other) => other !== index)
+
+    for (const tail of permutations(rest)) yield [items[index], ...tail]
+  }
+}
+
+/**
+ * The best block-local rearrangement of one block, or null if nothing beats the
+ * arrangement it already has.
+ *
+ * @param {Fact[]} cards
+ * @param {number} blockIndex
+ * @param {Set<number>} pinned
+ * @param {() => number} rng
+ * @param {number} clashes  The whole deck's current clash count — the bar to beat.
+ * @returns {{ cards: Fact[], clashes: number }|null}
+ */
+function bestRearrangement(cards, blockIndex, pinned, rng, clashes) {
+  const start = blockStart(blockIndex)
+  const end = Math.min(start + BLOCK_SIZE, cards.length)
+
+  const slots = []
+  for (let slot = start; slot < end; slot++) {
+    if (!pinned.has(slot)) slots.push(slot)
+  }
+
+  // One movable card has nothing to trade places with.
+  if (slots.length < 2) return null
+
+  // Shuffled so that two arrangements that are equally good are not always
+  // broken the same way. The deck she is dealt varies with the seed and so
+  // should its repair; without this, every repaired block in every session would
+  // settle into the same shape.
+  const movable = shuffle(
+    slots.map((slot) => cards[slot]),
+    rng
+  )
+
+  let best = null
+  let bestClashes = clashes
+
+  for (const order of permutations(movable)) {
+    const trial = [...cards]
+    slots.forEach((slot, position) => {
+      trial[slot] = order[position]
+    })
+
+    const after = adjacentClashes(trial)
+
+    // Strictly better, never merely equal. That is the termination argument:
+    // the count is a non-negative integer and every accepted rearrangement
+    // drops it by at least one.
+    if (after < bestClashes) {
+      best = trial
+      bestClashes = after
+
+      if (after === 0) break
+    }
+  }
+
+  return best === null ? null : { cards: best, clashes: bestClashes }
+}
+
 /**
  * The fix-up pass. (PLAN 4.2: "A final block-local fix-up pass prevents two
  * adjacent cards sharing an answer.")
@@ -433,7 +550,7 @@ function adjacentClashes(cards) {
  * deck rather than a constraint on the draw — the deck is already correct when
  * this runs, and this only makes it teach better.
  *
- * **Block-local means the swaps are block-local, not the collisions.** A card
+ * **Block-local means the moves are block-local, not the collisions.** A card
  * never leaves its block: the A → B → C progression is the point of the deck,
  * and the reserved slots would move with it. Collisions are looked for across
  * the whole deck, because the one that matters most is at the B/C seam — block B
@@ -441,15 +558,47 @@ function adjacentClashes(cards) {
  * the only place two blocks can collide, and a strictly block-local *scan* would
  * be blind to precisely that.
  *
- * Every swap must **strictly reduce** the number of clashing neighbours, which
- * is what makes this terminate: the count is a non-negative integer that falls
- * by at least one each round.
+ * ── WHY THIS IS A BLOCK REARRANGEMENT AND NOT A SWAP ────────────────────────
  *
- * If a clash cannot be resolved it is **left alone**. Not a throw: the defect is
- * cosmetic and a throw here would put an error boundary in front of a
- * six-year-old over a repeated answer. The draw's `MAX_PER_ANSWER` cap is what
- * makes that outcome unreachable in practice, and the test asserts a clean deck
- * over two hundred seeds for both activities rather than trusting this note.
+ * It used to be: find the leftmost clash, try to swap one of the two cards with
+ * another card in its own block, keep the first swap that strictly reduced the
+ * clash count, and stop the whole pass the moment no single swap helped. Both
+ * halves of that were wrong, and both were reproducible rather than theoretical.
+ *
+ * 1. **The pinned B/C seam could not be repaired at all.** Addition reserves
+ *    slot 12, the first card of block C, for a double over ten. A clash there is
+ *    between slot 11 and a slot that may not move, so the only card the swap
+ *    could relocate was the one at 11 — and block B is allowed two cards with
+ *    the same answer, so moving one of them to 11 just moves the clash inside
+ *    block B. Seed 881 is the smallest case: block B answers 13·15·19·16·15·16
+ *    against a 16 at slot 12, and *none* of the four legal single swaps beats
+ *    one clash, while the arrangement 13·15·16·15·16·19 has none. Measured over
+ *    seeds 1–200000, 198 addition decks — one in 1010 — shipped two consecutive
+ *    cards with the same answer, which is precisely what this pass exists to
+ *    prevent. (Subtraction never hit it: it pins slots 11 *and* 12, and the card
+ *    at 11 always answers 10 while a block C card always answers 9 or less, so
+ *    that seam cannot clash in the first place.)
+ *
+ * 2. **One unrepairable clash abandoned every other one.** The loop broke out
+ *    of the whole pass rather than moving on, so a deck whose leftmost clash was
+ *    the stuck seam kept every later clash too, however easy. Seed 881's deck
+ *    has one clash; seed 2661's has two, at slots 12 and 17, and the one at 17
+ *    is a plain within-block repeat that was never even attempted.
+ *
+ * So the unit of repair is now a block rather than a card. For each block that
+ * touches a clash, every arrangement of its movable cards is enumerated and the
+ * best one kept — exact rather than greedy, so slot 11 and slot 8 can move at
+ * once, which is what case 1 needs. Every block is visited every round, so an
+ * unrepairable clash costs only itself, which is what case 2 needs.
+ *
+ * If a clash still cannot be resolved it is **left alone**. Not a throw: the
+ * defect is cosmetic and a throw here would put an error boundary in front of a
+ * six-year-old over a repeated answer. A genuinely unarrangeable block is
+ * possible on paper — six cards that all answer 4 — and the draw's
+ * `MAX_PER_ANSWER` cap is what keeps it off her screen. That cap is *not* a
+ * proof that this pass always succeeds, which is the claim that used to stand
+ * here and was false; the proof is the test, which sweeps a contiguous range of
+ * seeds wide enough that the old pass failed twenty times inside it.
  *
  * @param {Fact[]} cards   The laid-out deck.
  * @param {Set<number>} pinned  Deck indices that may not move (the reserved slots).
@@ -462,41 +611,34 @@ export function fixAdjacentAnswers(cards, pinned, rng) {
   let best = [...cards]
   let clashes = adjacentClashes(best)
 
-  // At most one round per clash, since each round removes at least one.
+  const blocks = blockCount(cards.length)
+
+  // At most one round per clash, since a round that changes nothing stops the
+  // pass and a round that changes something removes at least one clash.
   for (let round = 0; round < cards.length && clashes > 0; round++) {
-    const at = best.findIndex((card, index) => index > 0 && card.answer === best[index - 1].answer)
+    let improved = false
 
-    // Either side of the clash can be the one that moves; a reserved slot cannot.
-    const movable = [at, at - 1].filter((index) => !pinned.has(index))
-    let improved = null
+    for (let blockIndex = 0; blockIndex < blocks; blockIndex++) {
+      // A block that cannot see a clash cannot remove one. Skipping it is the
+      // difference between three searches per round and one.
+      if (!touchesClash(best, blockIndex)) continue
 
-    for (const from of movable) {
-      const partners = shuffle(
-        best
-          .map((_, index) => index)
-          .filter((index) => index !== from && !pinned.has(index) && blockOfIndex(index) === blockOfIndex(from)),
-        rng
-      )
+      const attempt = bestRearrangement(best, blockIndex, pinned, rng, clashes)
 
-      for (const to of partners) {
-        const trial = [...best]
-        ;[trial[from], trial[to]] = [trial[to], trial[from]]
+      // This block is already as good as it can be made. Move to the next one
+      // rather than abandoning the deck — the whole of defect 2 above.
+      if (attempt === null) continue
 
-        const after = adjacentClashes(trial)
-        if (after < clashes) {
-          improved = { trial, after }
-          break
-        }
-      }
+      best = attempt.cards
+      clashes = attempt.clashes
+      improved = true
 
-      if (improved) break
+      if (clashes === 0) return best
     }
 
-    // Nothing helped. Leave the deck as it is — see the note above.
+    // Every block that can see a clash is already arranged as well as a
+    // block-local rearrangement can arrange it. Leave the deck as it is.
     if (!improved) break
-
-    best = improved.trial
-    clashes = improved.after
   }
 
   return best

@@ -108,9 +108,10 @@ const Shell = ({ route, navigate, goHome, outcome, onComplete, lastOption, start
       return (
         <ActivityScreen
           activity={activity}
-          // Her last choice if she has made one this visit, else what the
-          // manifest opens on. PLAN 5: the target used to reset to 10 every
-          // time she came home.
+          // Her last choice — this visit or any previous one, since step 9 it
+          // is mirrored to `amelia.prefs.v1` — else what the manifest opens on.
+          // PLAN 5: the target used to reset to 10 every time she came home,
+          // and until prefs existed it still did on every reload.
           initialOptionId={defaultOption(activity, lastOption[activity.id]).id}
           onBack={goHome}
           onStart={(chosen, option) => {

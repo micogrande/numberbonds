@@ -1,9 +1,6 @@
-import Bunting from './Bunting'
-import Globe from './Globe'
-import Hedgehog from './Hedgehog'
-import Pond from './Pond'
+import { lazy } from 'react'
+
 import Strawberries from './Strawberries'
-import Sunflower from './Sunflower'
 
 /**
  * Which drawing belongs to which category slot. (PLAN 3.5)
@@ -25,14 +22,38 @@ import Sunflower from './Sunflower'
  *
  * A category with no entry renders no motif rather than throwing. A missing
  * picture is a quieter card; a crash is her whole home screen.
+ *
+ * ── ONLY AN AWAKE CATEGORY'S DRAWING IS IN THE BOOT CHUNK ───────────────────
+ *
+ * A motif is drawn by `CategoryCard`, and a card is only rendered for an AWAKE
+ * category — a sleeping slot draws a pot and a curled bunny instead (PLAN 3.6),
+ * and never looks in this table. `numbers` is the only awake slot, so five of
+ * these six drawings render nowhere. Imported statically they still shipped in
+ * the first chunk she downloads: five SVG components, parsed on every cold load,
+ * on a phone, for a screen that cannot show them.
+ *
+ * So a sleeping slot's drawing is behind a dynamic import. Nothing is deleted —
+ * PLAN 3.5 names all six and they are all drawn, ready for the day their
+ * category ships; they simply arrive in their own chunk, at the moment somebody
+ * first renders one.
+ *
+ * >>> WAKING A CATEGORY MOVES ITS MOTIF UP HERE. Delete `asleep` in
+ * >>> `categories.js` and this line becomes a static import, because from that
+ * >>> moment the home screen draws it on first paint and a lazy motif would show
+ * >>> an empty pebble for a frame. `motifs.test.js` fails if the two disagree,
+ * >>> so this is a reminder rather than a trap.
+ *
+ * (`CategoryCard` wraps the motif in its own `Suspense` with a `null` fallback,
+ * so even that frame is an empty pebble on a finished card rather than the whole
+ * screen dropping to the app's "Getting ready…".)
  */
 export const CATEGORY_MOTIFS = Object.freeze({
   numbers: Strawberries,
-  flags: Bunting,
-  geography: Hedgehog,
-  continents: Globe,
-  oceans: Pond,
-  clock: Sunflower,
+  flags: lazy(() => import('./Bunting')),
+  geography: lazy(() => import('./Hedgehog')),
+  continents: lazy(() => import('./Globe')),
+  oceans: lazy(() => import('./Pond')),
+  clock: lazy(() => import('./Sunflower')),
 })
 
 /**

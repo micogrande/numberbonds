@@ -3,6 +3,7 @@ import React, { Suspense, useCallback, useState } from 'react'
 import ErrorBoundary from './ErrorBoundary'
 import Shell from './Shell'
 import { useHashRoute } from './useHashRoute'
+import { readLastOptions, setLastOption as rememberLastOption } from '../storage/prefs'
 
 /**
  * The app. (PLAN 2.5, PLAN 2.7)
@@ -49,10 +50,24 @@ function App() {
 
   /**
    * activityId → the option she last started. PLAN 5's last low bug: "target
-   * resets to 10 on every return home". Memory, not storage — surviving a
-   * reload is `prefs.js` at step 9, and this is the shape it will replace.
+   * resets to 10 on every return home".
+   *
+   * Seeded from `amelia.prefs.v1` (PLAN 2.6) and written back on every start, so
+   * it now survives a reload as well as a walk home — which is what PLAN 2.5
+   * already promised for the refresh path: "lands on that activity's option
+   * screen **with her last choice pre-selected**". Until step 9 that sentence
+   * was only true within one page load, and a reload on `#/play/bonds-to/t7`
+   * correctly bounced her to the picker and then silently opened it on t10.
+   *
+   * The React state is what a render reads and storage is the durable mirror.
+   * Both, rather than either: reading storage in render would not re-render on a
+   * change, and holding it only in state is the bug above.
+   *
+   * The initialiser is passed as a FUNCTION so the read happens once on mount
+   * rather than on every render (`useState(readLastOptions())` would call it
+   * every time and throw the result away).
    */
-  const [lastOption, setLastOption] = useState({})
+  const [lastOption, setLastOption] = useState(readLastOptions)
 
   /**
    * The game she pressed *start* on, if any — and the reason a refresh does not
@@ -86,6 +101,13 @@ function App() {
     setLastOption((previous) =>
       previous[activity.id] === option.id ? previous : { ...previous, [activity.id]: option.id }
     )
+
+    // OUTSIDE the updater, not inside it. A state updater must be pure —
+    // StrictMode invokes it twice in development — and a write to localStorage
+    // is not. It is also the reason this is not folded into the line above.
+    // Failure is ignored on purpose: `safeStorage` never throws, and a
+    // preference that did not persist is a wrong pre-selection, not a lost game.
+    rememberLastOption(activity.id, option.id)
   }, [])
 
   /**

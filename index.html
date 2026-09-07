@@ -2,7 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover is REQUIRED, not cosmetic. Without it every
+         env(safe-area-inset-*) in the app resolves to 0px on every device,
+         including a notched iPhone, and --safe-top / --safe-bottom in
+         styles/variables.css are dead tokens that look implemented and do
+         nothing. The browser letterboxes the page inside the safe area for us
+         instead, which is why nobody noticed.
+
+         Adding it makes them load-bearing: the page now extends under the notch
+         and the home indicator, and components/screen/Screen.module.css is what
+         pads it back. Do not add one without the other.
+
+         `interactive-widget` is DELIBERATELY ABSENT. It controls what the layout
+         does when the on-screen keyboard opens; no <input> element exists
+         anywhere in this tree and eslint enforces that (AGENTS.md), so no
+         keyboard can ever appear. Safari does not implement the key at all.
+         Adding it would be inert on both platforms — do not "fix" this. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/strawberry.svg" />
     <meta name="theme-color" content="#FBF8F1" />
     <meta name="mobile-web-app-capable" content="yes" />
