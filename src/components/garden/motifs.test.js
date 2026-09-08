@@ -5,6 +5,7 @@ import Bunting from './Bunting'
 import Globe from './Globe'
 import Hedgehog from './Hedgehog'
 import Pond from './Pond'
+import Strawberries from './Strawberries'
 import Sunflower from './Sunflower'
 import { CATEGORY_MOTIFS, CATEGORY_TINTS } from './motifs'
 import { CATEGORIES } from '../../activities/categories'
@@ -78,21 +79,27 @@ describe('the sleeping drawings are still there, not deleted', () => {
   // costs her nothing — and the build is what proves `motifs.js`'s dynamic
   // import specifiers point at these same files, since Rollup resolves a
   // literal `import()` at build time and fails on one that does not exist.
-  it.each([
-    ['geography', Hedgehog],
-    ['continents', Globe],
-    ['oceans', Pond],
-    ['clock', Sunflower],
-  ])('%s still has a drawing', (id, Drawing) => {
-    expect(CATEGORIES.find((category) => category.id === id).asleep, `${id} woke up`).toBe(true)
-    expect(typeof Drawing).toBe('function')
-  })
+  // DERIVED, NOT LISTED — the same lesson as bootChunk.test.js. A hand-kept list
+  // of sleeping slots is wrong the moment one ships, and it was, twice. What is
+  // actually invariant is the pairing: an awake slot's motif is a static
+  // component, a sleeping one's is lazy, and BOTH exist. "Out of the boot chunk"
+  // must never decay into "gone" — the day a category wakes, its picture has to
+  // be there.
+  it.each(CATEGORIES.map((category) => [category.id, !category.asleep]))(
+    '%s has a drawing, and eager is %s',
+    (id, awake) => {
+      const motif = CATEGORY_MOTIFS[id]
 
-  // Flags woke up. Its drawing moved from a lazy import to a static one, which
-  // is the transition this pair of files exists to keep honest — the bunting is
-  // now on screen at first paint, so it belongs in the boot chunk.
-  it('flags is awake and its drawing is drawn eagerly', () => {
-    expect(CATEGORIES.find((category) => category.id === 'flags').asleep).toBeUndefined()
-    expect(CATEGORY_MOTIFS.flags).toBe(Bunting)
+      expect(motif, `${id} has no drawing at all`).toBeTruthy()
+      expect(isLazy(motif), `${id} is ${awake ? 'awake' : 'asleep'} and its motif disagrees`).toBe(!awake)
+    }
+  )
+
+  it('still has all six drawings on disk, by name', () => {
+    // Imported by name so a deleted file fails here rather than on the day a
+    // category ships. A test file is not in the bundle, so this costs her nothing.
+    for (const Drawing of [Strawberries, Bunting, Hedgehog, Globe, Pond, Sunflower]) {
+      expect(typeof Drawing).toBe('function')
+    }
   })
 })

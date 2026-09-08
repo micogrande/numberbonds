@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { CATEGORIES } from './activities/categories'
 import { dirname, relative, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
@@ -212,32 +213,42 @@ describe('framer-motion is already there, whatever any one file decides', () => 
   })
 })
 
+/** The drawing each slot uses, by file name. PLAN 3.5 names all six by hand. */
+const MOTIF_FILES = Object.freeze({
+  numbers: 'Strawberries',
+  flags: 'Bunting',
+  geography: 'Hedgehog',
+  continents: 'Globe',
+  oceans: 'Pond',
+  clock: 'Sunflower',
+})
+
 describe('a drawing nothing renders is not in the boot chunk', () => {
-  it('keeps the one the home screen actually paints', () => {
-    // `numbers` is the only awake slot, so the strawberry patch is the only
-    // motif a card ever asks for. It must be there on first frame.
+  it('keeps the motif of the slot she opens most', () => {
     expect(inBootChunk('components/garden/Strawberries.jsx')).toBe(true)
   })
 
-  // Flags shipped, so Bunting is drawn on first paint and belongs in the boot
-  // chunk — motifs.test.js asserts the other half of that pairing. The rule this
-  // list guards is unchanged: a drawing is in the boot chunk if and only if the
-  // home screen actually draws it, and these four still draw nowhere.
-  it.each([
-    ['geography', 'Hedgehog'],
-    ['continents', 'Globe'],
-    ['oceans', 'Pond'],
-    ['clock', 'Sunflower'],
-  ])('leaves %s asleep, so %s stays out', (_slot, drawing) => {
-    // A sleeping slot draws a pot and a curled bunny (PLAN 3.6) and never looks
-    // in `CATEGORY_MOTIFS`, so these five render nowhere. Statically imported
-    // they were still parsed on every cold load of her phone, for pictures that
-    // cannot appear until their category ships.
-    expect(
-      inBootChunk(`components/garden/${drawing}.jsx`),
-      `${drawing} renders nowhere yet and must stay behind a dynamic import`
-    ).toBe(false)
-  })
+  // DERIVED, NOT LISTED. Waking a category used to mean editing this file, and a
+  // hand-kept list of "asleep" slots is wrong the moment one ships — it failed
+  // exactly that way twice, for flags and then geography. The rule has never
+  // changed: a drawing belongs in the boot chunk if and only if the home screen
+  // actually draws it. So ask the categories.
+  //
+  // A sleeping slot draws a pot and a curled bunny (PLAN 3.6) and never looks in
+  // CATEGORY_MOTIFS, so its motif renders nowhere; statically imported it would
+  // still be parsed on every cold load of her phone, for a picture that cannot
+  // appear until its category ships.
+  it.each(CATEGORIES.map((category) => [category.id, MOTIF_FILES[category.id], !category.asleep]))(
+    '%s: motif in the boot chunk is %s',
+    (id, drawing, awake) => {
+      expect(
+        inBootChunk(`components/garden/${drawing}.jsx`),
+        awake
+          ? `${id} is awake, so ${drawing} is painted on first frame and must ship eagerly`
+          : `${id} renders nowhere yet, so ${drawing} must stay behind a dynamic import`
+      ).toBe(awake)
+    }
+  )
 
   it('still ships what a sleeping slot really does draw', () => {
     expect(inBootChunk('components/SleepingSlot.jsx')).toBe(true)
