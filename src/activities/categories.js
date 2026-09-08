@@ -38,7 +38,7 @@
 export const CATEGORIES = Object.freeze(
   [
     { id: 'numbers', slug: 'numbers', title: 'numbers', order: 1, asleep: false },
-    { id: 'flags', slug: 'flags', title: 'flags', order: 2, asleep: true },
+    { id: 'flags', slug: 'flags', title: 'flags', order: 2 },
     { id: 'geography', slug: 'geography', title: 'geography', order: 3, asleep: true },
     { id: 'continents', slug: 'continents', title: 'continents', order: 4, asleep: true },
     { id: 'oceans', slug: 'oceans', title: 'oceans', order: 5, asleep: true },

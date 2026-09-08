@@ -1,5 +1,6 @@
 import { lazy } from 'react'
 
+import Bunting from './Bunting'
 import Strawberries from './Strawberries'
 
 /**
@@ -46,10 +47,11 @@ import Strawberries from './Strawberries'
  * (`CategoryCard` wraps the motif in its own `Suspense` with a `null` fallback,
  * so even that frame is an empty pebble on a finished card rather than the whole
  * screen dropping to the app's "Getting ready…".)
+
  */
 export const CATEGORY_MOTIFS = Object.freeze({
   numbers: Strawberries,
-  flags: lazy(() => import('./Bunting')),
+  flags: Bunting,
   geography: lazy(() => import('./Hedgehog')),
   continents: lazy(() => import('./Globe')),
   oceans: lazy(() => import('./Pond')),

@@ -79,7 +79,6 @@ describe('the sleeping drawings are still there, not deleted', () => {
   // import specifiers point at these same files, since Rollup resolves a
   // literal `import()` at build time and fails on one that does not exist.
   it.each([
-    ['flags', Bunting],
     ['geography', Hedgehog],
     ['continents', Globe],
     ['oceans', Pond],
@@ -87,5 +86,13 @@ describe('the sleeping drawings are still there, not deleted', () => {
   ])('%s still has a drawing', (id, Drawing) => {
     expect(CATEGORIES.find((category) => category.id === id).asleep, `${id} woke up`).toBe(true)
     expect(typeof Drawing).toBe('function')
+  })
+
+  // Flags woke up. Its drawing moved from a lazy import to a static one, which
+  // is the transition this pair of files exists to keep honest — the bunting is
+  // now on screen at first paint, so it belongs in the boot chunk.
+  it('flags is awake and its drawing is drawn eagerly', () => {
+    expect(CATEGORIES.find((category) => category.id === 'flags').asleep).toBeUndefined()
+    expect(CATEGORY_MOTIFS.flags).toBe(Bunting)
   })
 })

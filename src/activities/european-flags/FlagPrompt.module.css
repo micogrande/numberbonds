@@ -1,0 +1,41 @@
+/* One flag, shown large. (WORLD.md)
+
+   NO FIXED ASPECT BOX, NO `overflow`, NO `vh`. All three were in the first
+   version and all three were wrong:
+
+   - Every flag in the vendored 4x3 set shares the viewBox `0 0 640 480`
+     (verified: 51 of 51), so the <svg> already has the right intrinsic ratio and
+     a wrapper enforcing 4/3 was doing nothing except needing `overflow: hidden`
+     to hide its own rounding. `components/screen/contract.test.js` reserves every
+     `overflow` in the app for the shell and the ambient layer, and it is right to:
+     "which box clips?" has to be answerable in one place.
+   - The height cap was `46vh`, and the contract bans height-relative viewport
+     units outside a named list — because the defect that started all this was a
+     viewport-height defect. `max-block-size: 100%` does the same job by asking
+     the parent, which is the box that actually knows.
+
+   `vw` is allowed and is used here for the width cap, the same way GlyphPrompt
+   sizes its numeral.
+
+   The border is not decoration: several flags are white at the edge (Vatican
+   City, Malta, Poland, Monaco) and would otherwise bleed into the cream page and
+   lose their shape. */
+.frame {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    inline-size: 100%;
+    block-size: 100%;
+    min-block-size: 0;
+}
+
+.flag {
+    inline-size: auto;
+    block-size: auto;
+    max-inline-size: min(78vw, 420px);
+    max-block-size: 100%;
+    background: var(--color-surface);
+    border: 2px solid var(--sage-400);
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+}

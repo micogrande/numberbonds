@@ -219,8 +219,11 @@ describe('a drawing nothing renders is not in the boot chunk', () => {
     expect(inBootChunk('components/garden/Strawberries.jsx')).toBe(true)
   })
 
+  // Flags shipped, so Bunting is drawn on first paint and belongs in the boot
+  // chunk — motifs.test.js asserts the other half of that pairing. The rule this
+  // list guards is unchanged: a drawing is in the boot chunk if and only if the
+  // home screen actually draws it, and these four still draw nowhere.
   it.each([
-    ['flags', 'Bunting'],
     ['geography', 'Hedgehog'],
     ['continents', 'Globe'],
     ['oceans', 'Pond'],

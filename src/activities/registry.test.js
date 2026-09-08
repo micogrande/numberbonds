@@ -115,9 +115,27 @@ describe('the six category slots', () => {
     expect(new Set(inOrder.map((category) => category.slug)).size).toBe(6)
   })
 
-  it('has exactly one awake category and five asleep', () => {
-    expect(CATEGORIES.filter((category) => !category.asleep).map((c) => c.id)).toEqual(['numbers'])
-    expect(CATEGORIES.filter((category) => category.asleep)).toHaveLength(5)
+  // Six slots, fixed forever by PLAN 1, and the split between awake and asleep
+  // moves every time a category ships. What must NOT move is the count or the
+  // order: she navigates by spatial memory, so a card that changes position is a
+  // page she has to relearn. Assert the invariant, not this week's split.
+  it('has six slots that never reorder, and every awake one has activities', () => {
+    expect(CATEGORIES).toHaveLength(6)
+    expect(CATEGORIES.map((c) => c.order)).toEqual([1, 2, 3, 4, 5, 6])
+
+    for (const category of CATEGORIES.filter((c) => !c.asleep)) {
+      expect(
+        activitiesInCategory(category.id).length,
+        `${category.id} is awake but has no activities — an empty room with a door`
+      ).toBeGreaterThan(0)
+    }
+
+    for (const category of CATEGORIES.filter((c) => c.asleep)) {
+      expect(
+        activitiesInCategory(category.id),
+        `${category.id} is asleep but has activities filed in it, which are unreachable`
+      ).toEqual([])
+    }
   })
 
   it('files every activity in exactly one category, in `order` order', () => {
