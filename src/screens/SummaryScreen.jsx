@@ -1,6 +1,8 @@
 import React from 'react';
 import styles from './Summary.module.css';
 import Screen, { ScreenChrome, ScreenContent } from '../components/screen/Screen';
+import Bloom from '../components/garden/Bloom';
+import { useDailyGoal } from '../goals/useDailyGoal';
 import ScreenHeader from '../components/ScreenHeader';
 import { celebrateSession } from '../feedback/celebrate';
 import { formatTime } from '../lib/time';
@@ -59,6 +61,10 @@ function previousDenominator(previousBest, total) {
  * @param {() => void} props.onHome
  */
 const SummaryScreen = ({ result, onRestart, onHome }) => {
+    // Read here rather than in a child: this screen mounts immediately after
+    // PlayHost has written the completion, so the numbers are already current.
+    const day = useDailyGoal();
+
     const { score, total, wallMs, isNewRecord, previousBest } = result;
 
     /**
@@ -141,6 +147,30 @@ const SummaryScreen = ({ result, onRestart, onHome }) => {
                 <p className={styles.summaryDetails}>
                     {score === total ? 'Perfect Score! 🌟' : 'Great Practice! Keep it up!'}
                 </p>
+
+                {/* The day's vine, at the moment it is actually earned.
+                    (GOALS.md section 3)
+
+                    Past tense, always — "you did", never "do three to get". And
+                    the finished-day line is deliberately quiet: this screen has
+                    ALREADY fired confetti for the session, and if finishing the
+                    whole day looked the same, neither would mean anything. The
+                    bunny arriving home on the home screen is the celebration;
+                    this is the receipt. */}
+                {day.total > 0 && (
+                    <div className={styles.day}>
+                        <div className={styles.dayBlooms} aria-hidden="true">
+                            {day.tasks.map((task, index) => (
+                                <Bloom key={`${task.key}-${index}`} open={task.done} className={styles.dayBloom} />
+                            ))}
+                        </div>
+                        <p className={styles.dayText}>
+                            {day.allDone
+                                ? `You did everything on your list today.`
+                                : `You did ${day.completed} of ${day.total} today.`}
+                        </p>
+                    </div>
+                )}
 
                 <button className={styles.restartButton} onClick={onRestart}>
                     Play Again

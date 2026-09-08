@@ -21,13 +21,16 @@ import { OUTLINE, EAR, filled } from './strokes'
  *
  * @param {Object} props
  * @param {'peek'|'asleep'} [props.pose]
+ * @param {React.CSSProperties} [props.style] Carries `--journey` when he is walking the vine.
  */
-const Bunny = ({ className, pose = 'peek' }) => {
+const Bunny = ({ className, pose = 'peek', style, ...rest }) => {
   const asleep = pose === 'asleep'
 
   return (
     <svg
       className={className}
+      style={style}
+      {...rest}
       viewBox="0 0 100 100"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"

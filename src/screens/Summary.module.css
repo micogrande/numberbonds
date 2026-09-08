@@ -119,3 +119,37 @@
         box-shadow: var(--shadow-press);
     }
 }
+
+/* The day's vine, on the screen where it is actually earned. (GOALS.md section 3)
+
+   Deliberately quiet. This screen has already fired confetti for the session
+   just finished; if completing the whole DAY looked the same, neither event
+   would mean anything. The celebration for a finished day is the bunny arriving
+   home on the home screen — this is the receipt for it.
+
+   Colour: --color-text-light on --color-bg is 5.15:1, AA at any size. */
+.day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-xs);
+    margin-block-start: var(--spacing-md);
+}
+
+.dayBlooms {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: var(--spacing-sm);
+}
+
+.dayBloom {
+    inline-size: 26px;
+    block-size: 34px;
+}
+
+.dayText {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text-light);
+}

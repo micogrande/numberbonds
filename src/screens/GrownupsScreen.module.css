@@ -1,0 +1,150 @@
+/* The grown-ups screen. (GOALS.md section 3)
+
+   The one screen in this app not designed for a child, and it should look like
+   it. No garden, no motifs, no 72px targets, no illustration budget — a dense,
+   plain settings page for an adult who opens it rarely. That contrast is doing
+   real work: the moment this looks like part of the garden is the moment she
+   taps it thinking it is a game.
+
+   It is `growth="flow"`, so the content region scrolls. That is correct and
+   deliberate: this list grows with every activity ever added, which is exactly
+   the shape of content the fixed screens must never hold.
+
+   Colour, measured against --color-bg #FBF8F1:
+     --color-text        8.82:1
+     --color-text-light  5.15:1
+     white on --color-primary-press  (button)  ~8.9:1 */
+
+.grownups {
+    --screen-row-gap: var(--spacing-sm);
+}
+
+/* No padding and no flex row. The gate must land on the SAME pixel as it does
+   on every other screen — the layout suite compares its rect across all of them
+   and fails on a difference of ten pixels, which is exactly the kind of drift
+   that makes a child hunt for the way out. Chrome here is therefore shaped like
+   CategoryScreen's: the gate, then a title under it. */
+
+.title {
+    font-family: var(--font-body);
+    font-size: 1.125rem;
+    font-weight: 900;
+    color: var(--color-text);
+}
+
+.blurb {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--color-text-light);
+    margin-block-end: var(--spacing-md);
+}
+
+.section {
+    margin-block-end: var(--spacing-lg);
+}
+
+.heading {
+    font-size: 0.8rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-text-light);
+    margin-block-end: var(--spacing-sm);
+}
+
+.count {
+    font-weight: 700;
+    letter-spacing: 0;
+}
+
+.empty {
+    font-size: 0.95rem;
+    color: var(--color-text-light);
+    font-style: italic;
+}
+
+.chosen {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+    counter-reset: task;
+}
+
+.chosenRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--color-surface);
+    border: 1px solid var(--sage-200);
+    border-radius: var(--radius-sm, 10px);
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.remove {
+    /* 44px, like everything else. This screen is for an adult, but 44 is the
+       Apple HIG floor and WCAG's enhanced target size for adults too — the
+       layout suite holds every interactive control in the app to it, and it is
+       right to. */
+    min-block-size: 44px;
+    padding-inline: var(--spacing-sm);
+    color: var(--color-error);
+    font-weight: 700;
+    text-decoration: underline;
+}
+
+.activity {
+    margin-block-end: var(--spacing-md);
+}
+
+.activityName {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--color-text);
+    margin-block-end: var(--spacing-xs);
+}
+
+.options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+.option {
+    min-block-size: 44px;
+    min-inline-size: 44px;
+    padding-inline: var(--spacing-sm);
+    border-radius: var(--radius-sm, 10px);
+    border: 1px solid var(--sage-400);
+    background: var(--color-surface);
+    font-weight: 700;
+    color: var(--color-text);
+}
+
+.option:disabled {
+    opacity: 0.4;
+}
+
+.actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding-block: var(--spacing-md);
+}
+
+.save {
+    min-block-size: 44px;
+    padding-inline: var(--spacing-lg);
+    border-radius: var(--radius-round);
+    background: var(--color-primary-press);
+    color: #fff;
+    font-weight: 800;
+}
+
+.savedNote {
+    font-size: 0.9rem;
+    color: var(--color-text-light);
+}

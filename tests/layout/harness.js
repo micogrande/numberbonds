@@ -115,6 +115,19 @@ export async function collectScreens(page, { withSummary = true } = {}) {
   await page.reload({ waitUntil: 'load' })
   screens.push({ id: 'home', note: '#/', navigate: async () => { await page.goto(`${BASE}/#/`); await settle(page) } })
 
+  // 1b · the grown-ups screen. Typed, never linked, so it is the one screen the
+  // crawl above can never discover on its own — and it is `growth="flow"` with a
+  // list that grows with every activity ever added, which is exactly the shape
+  // that broke the Numbers menu. It gets measured for the same reason.
+  screens.push({
+    id: 'grownups',
+    note: '#/grownups',
+    navigate: async () => {
+      await page.goto(`${BASE}/#/grownups`)
+      await settle(page)
+    },
+  })
+
   // 2 · the awake categories
   const categories = await page.$$eval('[data-category]', (els) =>
     els.filter((el) => el.tagName === 'BUTTON').map((el) => el.getAttribute('data-category'))

@@ -5,6 +5,7 @@ import { assertActivityModule } from '../activities/manifestSchema'
 import { mulberry32 } from '../lib/rng'
 import { useSession } from '../session/useSession'
 import { beatsBest, getBest, recordResult } from '../storage/scores'
+import { recordCompletion } from '../storage/day'
 
 /**
  * The play host. (PLAN 2.2, PLAN 2.3, PLAN 7 step 8)
@@ -131,6 +132,21 @@ const PlayHost = ({ activity, option, onExit, onComplete }) => {
       total: result.total,
       wallMs: result.wallMs,
     })
+
+    // The day's vine. (GOALS.md section 2)
+    //
+    // Deliberately unconditional on score: "A session scored 4/18 blooms its
+    // flower exactly as 18/18 does." The app already measures how well she did
+    // three ways — the live score, the timer, and the personal best — and all
+    // three are axes she can fail on. This is the effort axis, and it is the one
+    // that still works on a day the maths is going badly.
+    //
+    // It sits here rather than in the reducer because it is a side effect on a
+    // finished session, and it shares this effect's identity guard: `result` is
+    // built exactly once per session, so a StrictMode double-invoke cannot
+    // bloom two flowers. An abandoned session never produces a `result` at all
+    // and therefore never reaches this line.
+    recordCompletion(activity.id, option.id, Date.now())
 
     onComplete({
       activitySlug: activity.slug,

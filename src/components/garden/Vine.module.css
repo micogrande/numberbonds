@@ -1,0 +1,149 @@
+/* The day's journey along the vine. (GOALS.md sections 1 and 3)
+
+   The header band is a fixed block size set by HomeScreen; this layer sits
+   inside it and is purely decorative apart from the visually-hidden readout.
+   Nothing here is a touch target — the vine is a picture of what she did, not
+   a control, and PLAN 3.3 keeps the header free of anything tappable.
+
+   Colour, measured:
+     readout is visually hidden and never painted, so it has no contrast
+     requirement; every visible part is a garden fill already checked in
+     variables.css. The bud uses --sage-200 behind a --sage-500 stroke, which is
+     decoration and carries no text.
+
+   THE RAIL. One coordinate space, expressed in percentages, so the blooms and
+   the bunny cannot drift apart as the header resizes. --start and --end are the
+   only tuned numbers in the file: --end is where the bunny has always sat
+   (roughly `right: 4%` in the original composition), so a finished day puts him
+   back exactly where the garden pass drew him. GOALS.md: "his journey ends at
+   the top-right corner he already occupies". */
+.vine {
+    position: relative;
+    inline-size: 100%;
+    block-size: 100%;
+    pointer-events: none;
+}
+
+.grass {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0;
+    block-size: 14px;
+    inline-size: 100%;
+}
+
+.rail {
+    --start: 9%;
+    --end: 88%;
+
+    position: absolute;
+    inset-inline: 0;
+    /* Sits on the grass line rather than above it, so both blooms and bunny
+       look planted in the same ground. */
+    inset-block-end: 6px;
+    block-size: 0;
+}
+
+/* A bloom's place on the rail. `--at` is 1/n .. n/n, set inline by Vine.jsx. */
+/* Sizes arrive as custom properties from the screen that hosts the vine, rather
+   than being declared here. That is not indirection for its own sake: the
+   viewport-unit clamps they carry are height-relative, and `components/screen/
+   contract.test.js` keeps every `vh` in the app on a named list so nobody
+   reintroduces the class of bug where a header grew and quietly pushed the last
+   card off a short phone. The scale belongs to the screen; the drawing belongs
+   here. Fallbacks keep this component renderable on its own. */
+.bloom {
+    position: absolute;
+    inset-block-end: 0;
+    inline-size: var(--bloom-size, 22px);
+    block-size: calc(var(--bloom-size, 22px) * 1.32);
+    left: calc(var(--start) + (var(--end) - var(--start)) * var(--at));
+    transform: translateX(-50%);
+    transform-origin: 50% 100%;
+    transition: transform var(--dur-move, 320ms) var(--ease-soft, ease-out);
+}
+
+/* The bunny's place on the rail. `--journey` is completed/n.
+
+   Left, not right, because the whole mechanic is travel: an element positioned
+   from the right edge does not move when the value changes, it resizes. */
+.bunny {
+    position: absolute;
+    inset-block-end: -6px;
+    inline-size: var(--bunny-size, 56px);
+    block-size: var(--bunny-size, 56px);
+    left: calc(var(--start) + (var(--end) - var(--start)) * var(--journey));
+    /* Not -50%. He stands just LEFT of the bloom he has reached rather than on
+       top of it — centred, he covers the flower he just opened, which is the one
+       thing on the vine she most wants to see. Offset, the two read as "he got
+       here and it opened". */
+    transform: translateX(-84%);
+    transition: left var(--dur-screen, 380ms) var(--ease-soft, ease-out);
+}
+
+/* Arriving is the only celebration on this screen, and it is deliberately
+   small: finishing a SESSION already fires confetti, and if finishing the whole
+   DAY looked the same, neither would mean anything (GOALS.md section 3). He
+   settles, once. */
+.bunny[data-arrived='true'] {
+    animation: settle 900ms var(--ease-soft, ease-out) 1;
+}
+
+@keyframes settle {
+    0% {
+        transform: translateX(-84%) translateY(0);
+    }
+
+    35% {
+        transform: translateX(-84%) translateY(-8px);
+    }
+
+    60% {
+        transform: translateX(-84%) translateY(0);
+    }
+
+    78% {
+        transform: translateX(-84%) translateY(-3px);
+    }
+
+    100% {
+        transform: translateX(-84%) translateY(0);
+    }
+}
+
+/* The rule the whole app follows: feedback never disappears, only motion does.
+   He still ARRIVES under reduced motion — he is simply already there. */
+@media (prefers-reduced-motion: reduce) {
+    .bloom,
+    .bunny {
+        transition: none;
+    }
+
+    .bunny[data-arrived='true'] {
+        animation: none;
+    }
+}
+
+/* The text equivalent. Visually hidden rather than absent, because GOALS.md
+   requires the vine to be readable without the picture and because this is what
+   a screen reader announces. Not `display: none`, which would take it out of
+   the accessibility tree along with the pixels. */
+.readout {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    margin: -1px;
+    padding: 0;
+    /* `clip-path` alone, deliberately: the usual visually-hidden recipe adds
+       `overflow: hidden`, and `components/screen/contract.test.js` reserves
+       every `overflow` declaration in the app for the shell and the ambient
+       layer — that reservation is what makes "which box clips?" answerable in
+       one place. clip-path does the whole job at a 1px box anyway. */
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+}
+
+.tasks {
+    display: block;
+}

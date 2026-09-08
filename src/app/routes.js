@@ -34,6 +34,7 @@ export const ROUTES = Object.freeze({
   ACTIVITY: 'activity',
   PLAY: 'play',
   SUMMARY: 'summary',
+  GROWNUPS: 'grownups',
   UNKNOWN: 'unknown',
 })
 
@@ -132,6 +133,14 @@ export function parseRoute(hash) {
     return { name: ROUTES.SUMMARY, activitySlug: rest[0], optionId: rest[1] }
   }
 
+  // The grown-ups screen. Typed by her dad, never linked to from anywhere a
+  // child can reach — that is the whole access control, and it is enough: the
+  // worst case is that she finds it and changes her own to-do list, which is
+  // not a security boundary, it is a Tuesday. (GOALS.md section 3)
+  if (head === 'grownups' && rest.length === 0) {
+    return { name: ROUTES.GROWNUPS }
+  }
+
   return { name: ROUTES.UNKNOWN, hash: typeof hash === 'string' ? hash : '' }
 }
 
@@ -181,6 +190,9 @@ export function buildRoute(route) {
     case ROUTES.SUMMARY:
       return `#/summary/${segment(route.activitySlug, 'activitySlug', 'summary')}/${segment(route.optionId, 'optionId', 'summary')}`
 
+    case ROUTES.GROWNUPS:
+      return '#/grownups'
+
     default:
       throw new TypeError(`buildRoute(): cannot build a URL for route ${JSON.stringify(name)}`)
   }
@@ -191,3 +203,4 @@ export const categoryRoute = (categorySlug) => ({ name: ROUTES.CATEGORY, categor
 export const activityRoute = (activitySlug) => ({ name: ROUTES.ACTIVITY, activitySlug })
 export const playRoute = (activitySlug, optionId) => ({ name: ROUTES.PLAY, activitySlug, optionId })
 export const summaryRoute = (activitySlug, optionId) => ({ name: ROUTES.SUMMARY, activitySlug, optionId })
+export const grownupsRoute = () => ({ name: ROUTES.GROWNUPS })

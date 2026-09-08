@@ -77,24 +77,32 @@
     color: var(--color-secondary);
 }
 
-/* ~56px, over on the right, sitting on the grass line with his ears breaking
-   through it. Decoration: it is not in the tab order and takes no taps. */
-.bunny {
-    position: absolute;
-    right: 4%;
-    bottom: -6px;
-    width: clamp(52px, 8vh, 72px);
-    height: clamp(52px, 8vh, 72px);
-    pointer-events: none;
-}
+/* The vine layer: the grass line, the day's blooms, and the bunny walking to
+   them. (GOALS.md)
 
-.grass {
+   This replaces the separate .bunny and .grass rules, and inherits both of their
+   jobs unchanged. The bleed either side is the grass line's — it ran the full
+   width of the SCREEN rather than of the padded header, which is what makes it
+   read as ground rather than as a rule under a heading — and the bunny still
+   ends his journey at roughly `right: 4%`, which is exactly where he used to
+   sit. A finished day is the composition the garden pass drew.
+
+   Decoration throughout: nothing in here is in the tab order or takes a tap,
+   because PLAN 3.3 keeps the header free of targets. The one non-visual part is
+   the visually-hidden readout inside Vine, which is text, not a control. */
+.vine {
+    /* The scale the vine draws at. Declared here rather than inside
+       Vine.module.css because these are the header's height-relative clamps —
+       the same `clamp(52px, 8vh, 72px)` the bunny has always used — and every
+       `vh` in the app is held on a named list by the screen contract test. */
+    --bunny-size: clamp(52px, 8vh, 72px);
+    --bloom-size: clamp(20px, 3.2vh, 28px);
+
     position: absolute;
     left: calc(-1 * var(--spacing-md));
     right: calc(-1 * var(--spacing-md));
     bottom: 0;
-    width: auto;
-    height: 14px;
+    block-size: clamp(58px, 9vh, 80px);
     pointer-events: none;
 }
 

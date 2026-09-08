@@ -6,8 +6,8 @@ import { categoriesInOrder } from '../activities/registry'
 import CategoryCard from '../components/CategoryCard'
 import SleepingSlot from '../components/SleepingSlot'
 import Ambient from '../components/garden/Ambient'
-import Bunny from '../components/garden/Bunny'
-import GrassLine from '../components/garden/GrassLine'
+import Vine from '../components/garden/Vine'
+import { useDailyGoal } from '../goals/useDailyGoal'
 
 /**
  * Home — "Amelia's Garden". (PLAN 1, PLAN 3.3, PLAN 3.6)
@@ -37,7 +37,13 @@ import GrassLine from '../components/garden/GrassLine'
  * than as "not yet". Fixing that needs a component with state, so the two slot
  * shapes are now two components; the branch below is otherwise unchanged.
  */
-const HomeScreen = ({ onOpenCategory }) => (
+const HomeScreen = ({ onOpenCategory }) => {
+  // Read here rather than in <Vine> so the vine stays a presentational
+  // component: it is handed numbers and draws them, which is what makes it
+  // testable and what lets the summary screen reuse it later.
+  const goals = useDailyGoal()
+
+  return (
   // growth="fixed", and the constant is written down in this source tree:
   // PLAN 1, "Six category slots exist on the home screen from day one and never
   // reorder." `activities/categories.js` throws in dev if that stops being six,
@@ -60,12 +66,12 @@ const HomeScreen = ({ onOpenCategory }) => (
         <span className={styles.name}>amelia</span>
       </h1>
 
-      {/* Peeking over the grass line at the top right, ears breaking through
-          it. He is decoration and is never a target (PLAN 3.3). */}
-      <Bunny className={styles.bunny} pose="peek" />
-
-      {/* Plants the header on the ground without a rule or a card. */}
-      <GrassLine className={styles.grass} />
+      {/* The grass line, the day's blooms, and the bunny walking to them.
+          (GOALS.md) He is still decoration and still never a target — what
+          changed is that his position along the line now MEANS something, and
+          a finished day puts him back in the top-right corner this composition
+          was drawn around. */}
+      <Vine className={styles.vine} {...goals} />
     </ScreenChrome>
 
     <ScreenContent mode="fill">
@@ -85,6 +91,7 @@ const HomeScreen = ({ onOpenCategory }) => (
       </div>
     </ScreenContent>
   </Screen>
-)
+  )
+}
 
 export default HomeScreen

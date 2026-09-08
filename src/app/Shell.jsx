@@ -2,6 +2,7 @@ import React, { useEffect } from 'react'
 
 import {
   HOME_HASH,
+  HOME_ROUTE,
   ROUTES,
   activityRoute,
   buildRoute,
@@ -11,6 +12,7 @@ import {
 } from './routes'
 import ActivityScreen from '../screens/ActivityScreen'
 import CategoryScreen from '../screens/CategoryScreen'
+import GrownupsScreen from '../screens/GrownupsScreen'
 import HomeScreen from '../screens/HomeScreen'
 import PlayHost from '../screens/PlayHost'
 import SummaryScreen from '../screens/SummaryScreen'
@@ -81,6 +83,12 @@ const Shell = ({ route, navigate, goHome, outcome, onComplete, lastOption, start
   switch (route.name) {
     case ROUTES.HOME:
       return <HomeScreen onOpenCategory={(category) => navigate(categoryRoute(category.slug))} />
+
+    // Typed by her dad, linked from nowhere. It goes home the same way every
+    // other screen does, so there is exactly one way out of it and it is the
+    // one he already knows. (GOALS.md section 3)
+    case ROUTES.GROWNUPS:
+      return <GrownupsScreen onDone={() => navigate(HOME_ROUTE)} />
 
     case ROUTES.CATEGORY: {
       const category = getCategoryBySlug(route.categorySlug)
