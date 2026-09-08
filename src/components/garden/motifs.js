@@ -1,7 +1,9 @@
 import { lazy } from 'react'
 
 import Bunting from './Bunting'
+import Globe from './Globe'
 import Hedgehog from './Hedgehog'
+import Pond from './Pond'
 import Strawberries from './Strawberries'
 
 /**
@@ -54,8 +56,8 @@ export const CATEGORY_MOTIFS = Object.freeze({
   numbers: Strawberries,
   flags: Bunting,
   geography: Hedgehog,
-  continents: lazy(() => import('./Globe')),
-  oceans: lazy(() => import('./Pond')),
+  continents: Globe,
+  oceans: Pond,
   clock: lazy(() => import('./Sunflower')),
 })
 

@@ -1,0 +1,40 @@
+/* The clue, set to wrap. (WORLD.md)
+
+   Smaller than CapitalPrompt's country name because a clue is a sentence, not a
+   name — "the coldest ocean, at the bottom of the world" has to fit at 320px
+   above four buttons that carry names as long as "Mediterranean Sea".
+
+   `vw` only, never a height-relative unit (components/screen/contract.test.js).
+
+   Colour: --color-text on --color-bg 8.82:1; lead --color-text-light 5.15:1. */
+.frame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-xs);
+    inline-size: 100%;
+    block-size: 100%;
+    min-block-size: 0;
+    padding-inline: var(--spacing-md);
+    text-align: center;
+}
+
+.lead {
+    font-family: var(--font-body);
+    font-size: clamp(0.9rem, 3.2vw, 1.15rem);
+    font-weight: 700;
+    color: var(--color-text-light);
+    text-transform: lowercase;
+    letter-spacing: 0.04em;
+}
+
+.clue {
+    font-family: var(--font-display);
+    font-size: clamp(1.35rem, 6vw, 2.25rem);
+    font-weight: 800;
+    line-height: 1.15;
+    color: var(--color-text);
+    text-wrap: balance;
+    max-inline-size: 18ch;
+}

@@ -23,11 +23,13 @@ import { validateRegistry } from './manifestSchema'
 import { ADD, SUB } from './arithmetic/manifest'
 import { BOND_PARTS, BOND_WHOLE } from './number-bonds/manifest'
 import { FLAG_EU } from './european-flags/manifest'
+import { CONTINENT } from './continents/manifest'
 import { GEO_EU } from './european-geography/manifest'
+import { OCEAN } from './oceans/manifest'
 import { ROMAN } from './roman-numerals/manifest'
 
 /** One entry per activity. This is the list. @type {readonly import('./manifestSchema').ActivityManifest[]} */
-export const ACTIVITIES = Object.freeze([BOND_WHOLE, BOND_PARTS, ADD, SUB, ROMAN, FLAG_EU, GEO_EU])
+export const ACTIVITIES = Object.freeze([BOND_WHOLE, BOND_PARTS, ADD, SUB, ROMAN, FLAG_EU, GEO_EU, CONTINENT, OCEAN])
 
 // Boot-time, dev-only, and loud. `defineActivity` has already checked every
 // manifest in isolation; this is the part no single manifest can know — whether

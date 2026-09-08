@@ -1,0 +1,40 @@
+/* The place name, set large. (WORLD.md)
+
+   Same sizing approach as CapitalPrompt: `vw` inside a clamp, never a
+   height-relative unit — components/screen/contract.test.js keeps every `vh` in
+   the app on a named list, because the defect that started all of this was a
+   viewport-height defect. "Papua New Guinea" is the longest prompt and is what
+   the upper clamp is tuned against.
+
+   Colour: --color-text on --color-bg 8.82:1; the lead is --color-text-light at
+   5.15:1, AA at any size. */
+.frame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    inline-size: 100%;
+    block-size: 100%;
+    min-block-size: 0;
+    padding-inline: var(--spacing-md);
+    text-align: center;
+}
+
+.lead {
+    font-family: var(--font-body);
+    font-size: clamp(0.95rem, 3.5vw, 1.25rem);
+    font-weight: 700;
+    color: var(--color-text-light);
+    text-transform: lowercase;
+    letter-spacing: 0.04em;
+}
+
+.place {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 8vw, 3rem);
+    font-weight: 800;
+    line-height: 1.05;
+    color: var(--color-text);
+    text-wrap: balance;
+}

@@ -467,7 +467,15 @@ describe('validateRegistry catches what one manifest cannot see', () => {
   })
 
   it('catches an activity filed under a sleeping category, which nothing can reach', () => {
-    const problems = validateRegistry([make({ categoryId: 'oceans' })], CATEGORIES)
+    // Whichever slot is still asleep today — hardcoding one meant this test
+    // broke on the morning that category shipped, which is a false alarm about
+    // a rule that had not changed. If every slot is awake there is nothing left
+    // to catch, and the assertion says so rather than silently passing.
+    const asleep = CATEGORIES.find((category) => category.asleep)
+
+    expect(asleep, 'every category is awake — this guard has nothing left to prove').toBeTruthy()
+
+    const problems = validateRegistry([make({ categoryId: asleep.id })], CATEGORIES)
     expect(problems.join(' ')).toMatch(/asleep/)
   })
 })

@@ -40,8 +40,8 @@ export const CATEGORIES = Object.freeze(
     { id: 'numbers', slug: 'numbers', title: 'numbers', order: 1, asleep: false },
     { id: 'flags', slug: 'flags', title: 'flags', order: 2 },
     { id: 'geography', slug: 'geography', title: 'geography', order: 3 },
-    { id: 'continents', slug: 'continents', title: 'continents', order: 4, asleep: true },
-    { id: 'oceans', slug: 'oceans', title: 'oceans', order: 5, asleep: true },
+    { id: 'continents', slug: 'continents', title: 'continents', order: 4 },
+    { id: 'oceans', slug: 'oceans', title: 'oceans', order: 5 },
     { id: 'clock', slug: 'clock', title: 'clock', order: 6, asleep: true },
   ].map((category) => Object.freeze(category))
 )
