@@ -2,7 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './app/App.jsx'
-import { migrateLegacyScores } from './storage/migrations'
+import { migrateFlagStarterScore, migrateLegacyScores } from './storage/migrations'
 
 // Amelia's real high scores live under the old `number_bonds_scores` key. They
 // are rescued once, before anything renders, so the very first summary screen
@@ -14,6 +14,7 @@ import { migrateLegacyScores } from './storage/migrations'
 // a migration failure must never be able to white-screen the app.
 try {
   migrateLegacyScores()
+  migrateFlagStarterScore()
 } catch (error) {
   console.error('Score migration failed; continuing without it.', error)
 }

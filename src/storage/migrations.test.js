@@ -6,6 +6,7 @@ import {
   LEGACY_SCORES_KEY,
   MIGRATIONS_KEY,
   legacyDeckTotal,
+  migrateFlagStarterScore,
   migrateLegacyScores,
   parseLegacyKey,
 } from './migrations'
@@ -260,5 +261,69 @@ describe('migrateLegacyScores', () => {
 
     expect(out).toEqual({ ran: true, migrated: 0, dropped: 0, saved: false })
     expect(failing.has(MIGRATIONS_KEY)).toBe(false)
+  })
+})
+
+describe('migrateFlagStarterScore', () => {
+  const FROM = 'FLAG_EU::starter::v1'
+  const TO = 'FLAG_EU::starter::v2'
+
+  const seedBest = (key, record) => {
+    const all = readAllBests()
+    store.set(SCORES_KEY, JSON.stringify({ ...all, [key]: record }))
+  }
+
+  const best = { score: 11, total: 12, wallMs: 41_000, recipeVersion: 1, playedAt: 1, plays: 3 }
+
+  it('carries a starter best forward across the version bump', () => {
+    seedBest(FROM, best)
+
+    expect(migrateFlagStarterScore().migrated).toBe(1)
+    expect(readAllBests()[TO]).toEqual(best)
+  })
+
+  it('leaves the old key in place as a backup', () => {
+    seedBest(FROM, best)
+    migrateFlagStarterScore()
+
+    expect(readAllBests()[FROM]).toEqual(best)
+  })
+
+  // The whole point of the bump. Copying these forward would reintroduce exactly
+  // the lie it was made to prevent: a 12-of-24 best beating a real 24-card run.
+  it('does NOT carry `more` or `all` forward — those are the incomparable ones', () => {
+    seedBest('FLAG_EU::more::v1', best)
+    seedBest('FLAG_EU::all::v1', best)
+    migrateFlagStarterScore()
+
+    const after = readAllBests()
+    expect(after['FLAG_EU::more::v2']).toBeUndefined()
+    expect(after['FLAG_EU::all::v2']).toBeUndefined()
+  })
+
+  it('never clobbers a record already set on the new key', () => {
+    seedBest(FROM, best)
+    seedBest(TO, { ...best, score: 12 })
+    migrateFlagStarterScore()
+
+    expect(readAllBests()[TO].score).toBe(12)
+  })
+
+  it('is idempotent, so StrictMode cannot double-apply it', () => {
+    seedBest(FROM, best)
+
+    expect(migrateFlagStarterScore().migrated).toBe(1)
+    expect(migrateFlagStarterScore()).toEqual({ ran: false, migrated: 0, saved: true })
+  })
+
+  it('does nothing when there is nothing to carry', () => {
+    expect(migrateFlagStarterScore().migrated).toBe(0)
+  })
+
+  it('ignores a zero-score record, like the bonds migration does', () => {
+    seedBest(FROM, { ...best, score: 0 })
+    migrateFlagStarterScore()
+
+    expect(readAllBests()[TO]).toBeUndefined()
   })
 })

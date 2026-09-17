@@ -262,3 +262,70 @@ export function migrateLegacyScores(options = {}) {
 
   return { ran: true, migrated, dropped, saved: marked }
 }
+
+/** The flags version bump, which retired one tier's records for no reason. */
+export const FLAG_STARTER_MIGRATION_ID = 'flags-starter-v2'
+
+/**
+ * Carry `FLAG_EU::starter::v1` forward to `::v2`.
+ *
+ * ── WHY THIS EXISTS ─────────────────────────────────────────────────────────
+ *
+ * `FLAG_EU.version` went 1 → 2 when `more` and `all` became exhaustive, and the
+ * bump was right: a stored 12/12 on `all` would otherwise have been beaten and
+ * overwritten by a 13/51, and the summary would have printed "Previous best:
+ * 12 / 12" beneath a run that was in every real sense worse.
+ *
+ * But `version` is activity-wide, so the bump also retired `starter` — whose
+ * recipe did not change at all. Same twelve flags, same `sample(pool,
+ * pool.length, rng)` call, same order for a given seed; two independent reviews
+ * confirmed the decks are byte-identical before and after. Those two records ARE
+ * comparable, so leaving one behind would be throwing away a real best for a
+ * reason that does not apply to it.
+ *
+ * ── WHY ONLY STARTER ────────────────────────────────────────────────────────
+ *
+ * `more` and `all` must NOT be copied. Those are the genuinely incomparable
+ * ones — twelve-of-twenty-four against twenty-four, twelve-of-fifty-one against
+ * fifty-one — and copying them forward would reintroduce exactly the lie the
+ * version bump was made to prevent. This migration is deliberately one key wide.
+ *
+ * Same rules as the bonds migration: never clobber an existing record, leave the
+ * old key in place as a backup, and mark itself applied only if the write
+ * actually reached storage, so a first load in private browsing retries later
+ * rather than silently consuming the migration.
+ *
+ * @param {{ now?: number }} [options]
+ * @returns {{ ran: boolean, migrated: number, saved: boolean }}
+ */
+export function migrateFlagStarterScore() {
+  const state = readObject(MIGRATIONS_KEY, {})
+  const applied = Array.isArray(state.applied) ? state.applied : []
+
+  if (applied.includes(FLAG_STARTER_MIGRATION_ID)) {
+    return { ran: false, migrated: 0, saved: true }
+  }
+
+  const from = 'FLAG_EU::starter::v1'
+  const to = 'FLAG_EU::starter::v2'
+
+  const bests = readAllBests()
+  const record = bests[from]
+  let migrated = 0
+
+  // A record worth carrying, and nothing already in its place.
+  if (record && typeof record === 'object' && record.score > 0 && !(to in bests)) {
+    const saved = writeObject(SCORES_KEY, { ...bests, [to]: { ...record } })
+
+    if (!saved) return { ran: true, migrated: 0, saved: false }
+
+    migrated = 1
+  }
+
+  const marked = writeObject(MIGRATIONS_KEY, {
+    ...state,
+    applied: [...applied, FLAG_STARTER_MIGRATION_ID],
+  })
+
+  return { ran: true, migrated, saved: marked }
+}

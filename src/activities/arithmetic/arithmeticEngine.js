@@ -35,6 +35,65 @@
  * Those six counts are the whole proof that the block predicates are right, and
  * `arithmeticEngine.test.js` asserts every one of them by enumeration.
  *
+ * ── "UP TO 10" IS NOT ONE CONSTRAINT, IT IS TWO ─────────────────────────────
+ *
+ * The owner asked for "a practice option to do it up to 10. So highest for
+ * addition would be 10+10 and highest for subtraction 10-10". Read against the
+ * two spaces above, those halves are different constraints, and the difference
+ * is the entire reason this file grew a second knob.
+ *
+ * SUBTRACTION is `max`, and needs nothing new. `subtractionSpace(max)` already
+ * caps the MINUEND, so "up to 10" is `max: 10` and the top card is a minuend of
+ * ten:
+ *
+ *     3 <= m <= 10 · 1 <= s <= 9 · s <= m-1       44 cards
+ *     A  m <= 10   44        B  0        C  0
+ *
+ * ADDITION is NOT `max`. `additionSpace(max)` caps the SUM, so `max: 10` would
+ * top out at 9 + 1 and could never deal 10 + 10. "Highest is 10+10" is a cap on
+ * each ADDEND, with sums still reaching twenty — a genuinely different
+ * constraint, and it is `addendMax`:
+ *
+ *     1 <= a <= 10 · 1 <= b <= 10 · 3 <= a+b <= 20     99 ordered cards
+ *     A  within ten          a+b <= 10                 44
+ *     B  one addend is 10    a+b >= 11 and max >= 10    19
+ *     C  bridging ten        a+b >= 11 and max <= 9     36
+ *
+ * Block B is the whole of the difference: at `addendMax` 10 "one operand is at
+ * least ten" can only mean "one operand is exactly ten", so B collapses from 109
+ * cards to the nineteen `n + 10` facts. Blocks A and C are the same 44 and 36
+ * cards as at `to20`, because neither ever used an addend above nine.
+ *
+ * `addendMax` defaults to `max - 1`, which is exactly what the loops always did,
+ * so the `to20` deck is unchanged card for card and seed for seed. That is not a
+ * nicety: `ADD::to20::v1` is a live high-score key (PLAN 2.6) and `version`
+ * exists for exactly one purpose (PLAN 2.2) — to say old scores are no longer
+ * comparable. Adding an option is not that, so the old deck may not move.
+ *
+ * ── AN EMPTY BLOCK, AND THE RESERVED SLOTS THAT NAMED IT ────────────────────
+ *
+ * Subtraction at max 10 has **no block B and no block C**: both require a
+ * minuend of at least eleven. Before this option existed `generate` refused the
+ * ceiling outright, and behind that guard `drawBlock` threw `RangeError: no card
+ * in this block is an answer of exactly 10` — PLAN 4.3 reserves slot 11 for a
+ * block B card and slot 12 for a block C card, and neither block is there.
+ *
+ * So the deck is three **sections** of six, and a section is *assigned* a block
+ * rather than *being* one. Two rules, and nothing else changes:
+ *
+ *   1. A block with no cards hands its section to the last block before it that
+ *      has any. Subtraction at 10 is therefore three sections drawn from block
+ *      A, and the A -> B -> C direction is preserved because a section can only
+ *      ever fall back to something she has already met, never forward.
+ *   2. A reserved slot whose block is absent is DROPPED. A coverage guarantee
+ *      about a block that does not exist guarantees nothing, and the alternative
+ *      — retargeting it at whichever block took the slot over — invents a
+ *      pedagogy PLAN does not state. Slot 5, "a minuend of exactly 10", survives
+ *      because block A survives.
+ *
+ * Every other deck has all three blocks, so `sectionPlan` returns A, B, C and
+ * all three reserved slots, and the layout is the one that shipped.
+ *
  * ── THE TRAP, WHICH IS THE MOST LIKELY BUG IN THIS FILE ─────────────────────
  *
  * PLAN 4.3 names it: **block C thins out at the top.** Available C cards per
@@ -97,13 +156,13 @@ export const BLOCK_SIZE = 6
 export const DECK_SIZE = BLOCK_ORDER.length * BLOCK_SIZE
 
 /**
- * The only ceiling either recipe is written for. Both PLAN 4.2 and PLAN 4.3
- * specify one deck each — "up to 20" — and every number below (the 189/134 card
- * spaces, the three block sizes, the reserved slots) is a fact about *that*
- * deck. `generate` therefore refuses any other ceiling rather than dealing
- * something approximate, exactly as the roman engine refuses a max it has no
- * template for: an option that advertises a deck the engine cannot deal is a
- * personal best out of the wrong denominator.
+ * The ceiling PLAN 4.2 and PLAN 4.3 are written for: the SUM for addition, the
+ * MINUEND for subtraction. Every number in those two sections (the 189/134 card
+ * spaces, the three block sizes, the reserved slots) is a fact about the 3–20
+ * deck, and `generate` refuses a ceiling it has no recipe for rather than
+ * dealing something approximate — exactly as the roman engine refuses a max it
+ * has no template for. An option that advertises a deck the engine cannot deal
+ * is a personal best out of the wrong denominator.
  */
 export const MAX = 20
 
@@ -113,6 +172,29 @@ export const MAX = 20
  * that a `10` in a block predicate cannot be read as an arbitrary constant.
  */
 const TEN = 10
+
+/**
+ * The addend cap the `to20` deck has always had, and what an option that names
+ * no cap gets. Not a chosen number: with both addends at least 1 and the sum
+ * capped at 20, neither addend could ever reach 20, so `MAX - 1` is the old loop
+ * bound written down. It is stated HERE and nowhere else — a second copy of it
+ * (a default parameter on `additionSpace`, say) would be a place where the old
+ * deck could quietly stop being the old deck.
+ */
+const DEFAULT_ADDEND_MAX = MAX - 1
+
+/**
+ * The ceilings this engine has a recipe for. Anything else is refused by
+ * `generate`, with the reason.
+ *
+ * Addition's ceiling is on the ADDENDS and its sum cap never moves: `TEN` is the
+ * owner's "highest is 10+10", `DEFAULT_ADDEND_MAX` is the `to20` deck. That
+ * subtraction's ceiling is on the MINUEND — which is what `max` has always meant
+ * here — is the whole asymmetry, and these two lists side by side are where it
+ * is easiest to see.
+ */
+export const ADDEND_MAXES = Object.freeze([TEN, DEFAULT_ADDEND_MAX])
+export const SUB_MAXES = Object.freeze([TEN, MAX])
 
 /** PLAN 4.3: "Subtrahend capped at 9". This is what makes block C thin out. */
 const MAX_SUBTRAHEND = 9
@@ -127,10 +209,14 @@ const MAX_SUBTRAHEND = 9
  * be arranged so that no two of them are neighbours, and a repair pass faced
  * with that either loops, throws in her face, or gives up silently.
  *
- * Capping an answer at two per block makes an unrepairable *block* impossible
- * (any multiset of six with no answer appearing more than three times can be
- * laid out with no two alike adjacent), and it costs nothing: every block has at
- * least eight distinct answers available, so the cap never empties a pool.
+ * Capping an answer at two per SECTION makes an unrepairable *section*
+ * impossible (any multiset of six with no answer appearing more than three
+ * times can be laid out with no two alike adjacent), and it costs nothing:
+ * every pool a section draws from has at least eight distinct answers
+ * available, so the cap never empties one. The tightest case is subtraction at
+ * max 10, where all three sections share block A's 44 cards and only nine
+ * distinct answers exist — the third section still sees at least seven of them
+ * with cards left, which is fourteen drawable against a need for six.
  *
  * What the cap does NOT buy, and used to be credited with: a guarantee that the
  * fix-up pass always succeeds. Two blocks meet at a seam, one side of that seam
@@ -209,14 +295,26 @@ function subtractionBlock(m, s) {
  * one is count-on-from-larger, the other requires first noticing you should
  * flip it — but a deck takes at most one card per unordered pair.)
  *
- * @param {number} [max]
+ * **Two caps, and they are not the same cap.** `max` is on the SUM, which is how
+ * PLAN 4.2 reads "numbers from 3 to 20". `addendMax` is on each ADDEND, which is
+ * how the owner's "highest would be 10+10" reads — 10 + 10 is a sum of twenty,
+ * so capping the sum at ten cannot express it and capping the addends at ten
+ * cannot be expressed by `max`.
+ *
+ * Both are REQUIRED. `DEFAULT_ADDEND_MAX` is the cap an option that names none
+ * gets, and the recipe above resolves it — a default parameter here as well
+ * would be a second, silent copy of the rule that keeps `ADD::to20::v1`
+ * comparable, and the only thing worse than one place to change it is two.
+ *
+ * @param {number} max        Cap on a+b.
+ * @param {number} addendMax  Cap on a and on b.
  * @returns {Fact[]}
  */
-function additionSpace(max = MAX) {
+function additionSpace(max, addendMax) {
   const cards = []
 
-  for (let a = 1; a <= max - 1; a++) {
-    for (let b = 1; b <= max - 1; b++) {
+  for (let a = 1; a <= addendMax; a++) {
+    for (let b = 1; b <= addendMax; b++) {
       const sum = a + b
       // 3 <= a+b <= max. Zero cannot appear: both loops start at 1, because
       // Number Bonds already drills `0 + n` and `n + 0` teaches nothing.
@@ -230,7 +328,12 @@ function additionSpace(max = MAX) {
 }
 
 /**
- * Every subtraction card there is: 134 of them at max 20.
+ * Every subtraction card there is: 134 of them at max 20, 44 at max 10.
+ *
+ * `max` caps the MINUEND, which is already what "up to N" means here — so the
+ * owner's "up to 10" needs nothing new from this function, only the ceiling. At
+ * max 10 every card is a block A card and blocks B and C are empty; `generate`
+ * deals with that rather than this function.
  *
  * The `s <= m - 1` bound is what excludes `n - n = 0`: PLAN 4.3 rules it out
  * because it is a rule to be told rather than a fact to be recalled, and because
@@ -263,17 +366,68 @@ function subtractionSpace(max = MAX) {
  * > Reserved: index 5 `m === 10`, index 11 `answer === 10`, index 12 `s === 9`.
  *
  * Each predicate is applied to its own block's pool, so "a double <= 10" is
- * `isDouble` filtered through block A and needs no second condition. Every one
- * of these leaves at least four candidates, and `sample` throws rather than
- * spinning if a future edit ever leaves none.
+ * `isDouble` filtered through block A and needs no second condition. At every
+ * ceiling this engine deals, each one that is still in play leaves at least four
+ * candidates, and `sample` throws rather than spinning if a future edit ever
+ * leaves none.
+ *
+ * A reserved slot whose BLOCK IS EMPTY is dropped rather than retargeted — see
+ * `sectionPlan`. Subtraction at max 10 is the case: slots 11 and 12 name blocks
+ * B and C, both of which need a minuend of at least eleven.
  */
 const isDouble = (candidate) => candidate.left === candidate.right
+
+/**
+ * What each recipe's `params` may say, and what `generate` refuses.
+ *
+ * This is where the asymmetry in the owner's request lives, stated once. Both
+ * decks are "up to 10" to her; underneath, one is a cap on the minuend and the
+ * other a cap on the addends, and a reader of this table can see which is which
+ * without knowing the rest of the file.
+ *
+ * `refuse` throws the TypeError itself so the message can name the actual
+ * mistake rather than "bad params".
+ *
+ * @param {string} detail
+ * @returns {never}
+ */
+function refuse(detail) {
+  throw new TypeError(`arithmetic generate(): ${detail}`)
+}
 
 const RECIPES = Object.freeze({
   [OPS.ADD]: Object.freeze({
     op: OPS.ADD,
     symbol: PLUS,
-    space: additionSpace,
+    /**
+     * Addition's sum cap never moves; the ceiling she picks caps the ADDENDS.
+     * `max: 10` is refused loudly rather than honoured, because honouring it
+     * would deal a deck whose top card is 9 + 1 under a label that promises
+     * 10 + 10.
+     *
+     * @param {{ max: number, addendMax?: number }} params
+     * @returns {Fact[]}
+     */
+    space(params) {
+      if (params.max !== MAX) {
+        refuse(
+          `addition always sums to ${MAX} and got max ${JSON.stringify(params.max)}. ` +
+            `"Up to 10" caps the ADDENDS, not the sum — 10 + 10 is 20 — so it is params.addendMax: ${TEN}.`
+        )
+      }
+
+      const addendMax = params.addendMax ?? DEFAULT_ADDEND_MAX
+
+      if (!ADDEND_MAXES.includes(addendMax)) {
+        refuse(
+          `no addition recipe for addendMax ${JSON.stringify(params.addendMax)}. ` +
+            `Expected one of: ${ADDEND_MAXES.join(', ')} (omit it for the ${DEFAULT_ADDEND_MAX} the to20 deck has always used). ` +
+            `A new ceiling is a new recipe, and a new option id with it (PLAN 2.2).`
+        )
+      }
+
+      return additionSpace(MAX, addendMax)
+    },
     /**
      * "a given unordered pair appears **at most once per deck**" (PLAN 4.2).
      * Structural rather than checked: the pool holds one entry per unordered
@@ -294,7 +448,28 @@ const RECIPES = Object.freeze({
   [OPS.SUB]: Object.freeze({
     op: OPS.SUB,
     symbol: MINUS,
-    space: subtractionSpace,
+    /**
+     * Subtraction's ceiling is the minuend, which is what `max` has always
+     * meant here — so "up to 10" is `max: 10` and nothing else moves.
+     *
+     * @param {{ max: number, addendMax?: number }} params
+     * @returns {Fact[]}
+     */
+    space(params) {
+      if (params.addendMax !== undefined) {
+        refuse(`subtraction has no addends, so params.addendMax means nothing here. Its ceiling is params.max.`)
+      }
+
+      if (!SUB_MAXES.includes(params.max)) {
+        refuse(
+          `no subtraction recipe for max ${JSON.stringify(params.max)}. Expected one of: ${SUB_MAXES.join(', ')}. ` +
+            `The card space, the block sizes and the reserved slots are facts about a particular ceiling ` +
+            `(PLAN 4.3); a new one is a new recipe, and a new option id with it (PLAN 2.2).`
+        )
+      }
+
+      return subtractionSpace(params.max)
+    },
     /** `m - s` is not reorderable; there is no unordered pair to collapse. */
     unordered: false,
     reserved: Object.freeze({
@@ -309,12 +484,11 @@ const RECIPES = Object.freeze({
   }),
 })
 
-/** Where block `n` starts in the deck. */
+/** Where section `n` starts in the deck. A section is one six-card group. */
 const blockStart = (index) => index * BLOCK_SIZE
 
-/** The first slot of block B, and the slot its orientation flips at (PLAN 4.2). */
-const B_START = blockStart(BLOCK_ORDER.indexOf(BLOCKS.B))
-const B_FLIPS_AT = B_START + 4
+/** How many of block B's six slots render larger-first (PLAN 4.2's "6–9"). */
+const B_LARGER_FIRST = 4
 
 /**
  * Which way round an addition card is written in this slot.
@@ -329,29 +503,38 @@ const B_FLIPS_AT = B_START + 4
  * so it is a coin flip, which is also what stops every within-ten card in every
  * session being written the same way round.
  *
+ * Asked of the CARD's block rather than of the raw index. Those were the same
+ * question while every deck was A·B·C and block B always owned slots 6–11 —
+ * both addition decks still are, so this is unchanged for either of them, and
+ * `index % BLOCK_SIZE` is the slot's position inside its own section. The card
+ * is what the rule is actually about, and a section plan that ever moved block B
+ * would otherwise flip the wrong six cards in silence.
+ *
  * Subtraction never asks: `17 - 4` and `4 - 17` are not the same card.
  *
+ * @param {Fact} card
  * @param {number} index  Absolute deck index.
  * @param {() => number} rng
  * @returns {boolean}
  */
-function rendersSmallerFirst(index, rng) {
-  if (index >= B_START && index < B_FLIPS_AT) return false
-  if (index >= B_FLIPS_AT && index < B_START + BLOCK_SIZE) return true
+function rendersSmallerFirst(card, index, rng) {
+  if (card.block !== BLOCKS.B) return rng() < 0.5
 
-  return rng() < 0.5
+  return index % BLOCK_SIZE >= B_LARGER_FIRST
 }
 
 /**
  * The card space, partitioned into the three blocks and reduced to what a deck
  * may draw from: for addition, one entry per unordered pair.
  *
+ * A pool may legitimately be EMPTY — subtraction at max 10 has no block B and no
+ * block C — and `sectionPlan` is what decides who gets those six slots.
+ *
  * @param {Object} recipe
- * @param {number} max
+ * @param {Fact[]} space
  * @returns {Record<string, Fact[]>}
  */
-function poolsFor(recipe, max) {
-  const space = recipe.space(max)
+function poolsFor(recipe, space) {
   const drawable = recipe.unordered ? space.filter((candidate) => candidate.left <= candidate.right) : space
 
   const pools = {}
@@ -363,7 +546,76 @@ function poolsFor(recipe, max) {
 }
 
 /**
- * Six facts for one block: the reserved one first, then five more, with no
+ * Which block each of the deck's three sections draws from, and which reserved
+ * slot it still owes.
+ *
+ * Normally the answer is the boring one: section 0 is block A, section 1 is
+ * block B, section 2 is block C, each with the reserved slot PLAN 4.2/4.3 gives
+ * it, and the deck laid out here is the deck that shipped. The interesting case
+ * is subtraction at max 10, where blocks B and C are empty because both need a
+ * minuend of at least eleven.
+ *
+ * **A block with no cards hands its section to the last block before it that has
+ * any.** Backwards, never forwards: a section may only fall back to something
+ * she has already met this deck, so the A -> B -> C direction survives even when
+ * two thirds of it is missing. Subtraction at 10 is therefore eighteen
+ * within-ten cards in three sections, which is the honest shape of "up to 10" —
+ * there is no bridging to grade up to when nothing crosses ten.
+ *
+ * **A reserved slot whose block is absent is dropped.** It is a coverage
+ * guarantee about that block, and a guarantee about a block with no cards
+ * guarantees nothing. The alternative — handing slot 12's "a subtrahend of
+ * exactly 9" to whichever block inherited the section — sounds harmless and is
+ * not: at max 10 exactly one card in the entire space has a subtrahend of nine
+ * (10 − 9), so it would be pinned into every single session she ever plays.
+ *
+ * @param {Record<string, Fact[]>} pools
+ * @param {Record<string, { slot: number, is: Function, what: string }>} reserved
+ * @returns {{ block: string, reserved: Object|null }[]} one entry per section
+ */
+function sectionPlan(pools, reserved) {
+  const first = BLOCK_ORDER.find((block) => pools[block].length > 0)
+
+  if (first === undefined) {
+    throw new RangeError(
+      `arithmetic sectionPlan(): every block is empty, so there is no deck to deal. ` +
+        `A ceiling with no cards at all is a recipe mistake, not a shortfall.`
+    )
+  }
+
+  let fallback = first
+  const plan = []
+
+  BLOCK_ORDER.forEach((block, sectionIndex) => {
+    if (pools[block].length === 0) {
+      plan.push({ block: fallback, reserved: null })
+      return
+    }
+
+    fallback = block
+
+    const slot = reserved[block].slot
+    const start = blockStart(sectionIndex)
+
+    if (slot < start || slot >= start + BLOCK_SIZE) {
+      // Cannot happen while a present block keeps its own position, which is the
+      // rule above — only ABSENT blocks are reassigned. Loud anyway: a reserved
+      // slot that landed in someone else's section would silently overwrite one
+      // of their cards and leave a hole in this one.
+      throw new RangeError(
+        `arithmetic sectionPlan(): block ${block} reserves slot ${slot}, which is outside its own section ` +
+          `(${start}…${start + BLOCK_SIZE - 1}).`
+      )
+    }
+
+    plan.push({ block, reserved: reserved[block] })
+  })
+
+  return plan
+}
+
+/**
+ * Six facts for one section: the reserved one first, then five more, with no
  * answer used more than `MAX_PER_ANSWER` times.
  *
  * Drawing the reserved card FIRST is what makes "index 4 is always a double" a
@@ -372,35 +624,53 @@ function poolsFor(recipe, max) {
  * `sample` from a finished, filtered list, so there is no way for this to spin
  * on a pool that cannot satisfy it (see the trap at the top of the file).
  *
+ * `reserved` is null for a section whose block was empty and which is therefore
+ * drawing from a neighbour's pool — there is no coverage left for it to
+ * guarantee. `taken` is what stops two such sections dealing the same card:
+ * while every section had its own block the pools were disjoint and no card
+ * could appear twice, and the moment two sections share one pool that stops
+ * being true for free.
+ *
  * @param {Fact[]} pool
- * @param {{ is: (fact: Fact) => boolean, what: string }} reserved
+ * @param {{ is: (fact: Fact) => boolean, what: string }|null} reserved
+ * @param {Set<Fact>} taken  Cards already dealt into earlier sections.
  * @param {() => number} rng
- * @returns {{ pinned: Fact, rest: Fact[] }}
+ * @returns {{ pinned: Fact|null, rest: Fact[] }}
  */
-function drawBlock(pool, reserved, rng) {
-  const eligible = pool.filter(reserved.is)
+function drawBlock(pool, reserved, taken, rng) {
+  const chosen = []
+  const used = new Map()
+  let pinned = null
 
-  if (eligible.length === 0) {
-    throw new RangeError(
-      `arithmetic drawBlock(): no card in this block is ${reserved.what}. ` +
-        `A reserved slot that cannot be filled is a deck that does not cover what PLAN 4.2/4.3 says it covers.`
-    )
+  if (reserved !== null) {
+    const eligible = pool.filter((candidate) => !taken.has(candidate) && reserved.is(candidate))
+
+    if (eligible.length === 0) {
+      throw new RangeError(
+        `arithmetic drawBlock(): no card in this block is ${reserved.what}. ` +
+          `A reserved slot that cannot be filled is a deck that does not cover what PLAN 4.2/4.3 says it covers.`
+      )
+    }
+
+    ;[pinned] = sample(eligible, 1, rng)
+
+    chosen.push(pinned)
+    used.set(pinned.answer, 1)
   }
-
-  const [pinned] = sample(eligible, 1, rng)
-
-  const chosen = [pinned]
-  const used = new Map([[pinned.answer, 1]])
 
   while (chosen.length < BLOCK_SIZE) {
     const candidates = pool.filter(
-      (candidate) => !chosen.includes(candidate) && (used.get(candidate.answer) ?? 0) < MAX_PER_ANSWER
+      (candidate) =>
+        !taken.has(candidate) && !chosen.includes(candidate) && (used.get(candidate.answer) ?? 0) < MAX_PER_ANSWER
     )
 
     if (candidates.length === 0) {
-      // Unreachable: every block has at least eight distinct answers and the cap
-      // is two, so at least sixteen cards are always drawable. It stays because
-      // the alternative to a sentence is `sample` throwing about an empty array.
+      // Unreachable at every ceiling this engine deals. The tightest is
+      // subtraction at max 10, where all three sections share block A's 44
+      // cards: the third one still sees at least seven distinct answers with
+      // cards left, which is fourteen drawable against a need for six. It stays
+      // because the alternative to a sentence is `sample` throwing about an
+      // empty array.
       throw new RangeError(
         `arithmetic drawBlock(): ran out of cards for a block of ${BLOCK_SIZE} ` +
           `with at most ${MAX_PER_ANSWER} cards per answer.`
@@ -672,7 +942,7 @@ function equationCard(recipe, card, index, rng) {
   // `right` first. Subtraction is never reordered — `17 - 4` and `4 - 17` are
   // different cards — and short-circuits before the rng is touched, so its deck
   // is not silently reshaped by adding an orientation to the other recipe.
-  const smallerFirst = !recipe.unordered || rendersSmallerFirst(index, rng)
+  const smallerFirst = !recipe.unordered || rendersSmallerFirst(card, index, rng)
   const first = smallerFirst ? card.left : card.right
   const second = smallerFirst ? card.right : card.left
 
@@ -708,13 +978,25 @@ function equationCard(recipe, card, index, rng) {
  * The activity entry point. (PLAN 2.2: `generate(params, rng) => Question[]`,
  * pure, `rng` last.)
  *
- * `params.op` and `params.max` are **opaque to everything outside this folder**
- * (PLAN 2.2 rule 2): the manifest writes them, this function reads them, and the
- * day a screen or the session reducer looks at either the contract has leaked.
+ * `params` is **opaque to everything outside this folder** (PLAN 2.2 rule 2):
+ * the manifest writes it, this function reads it, and the day a screen or the
+ * session reducer looks at any field of it the contract has leaked.
  *
- * @param {{ op: string, max: number }} params
+ * ```js
+ * { op: 'add', max: 20 }                   // ADD::to20 — sums to 20, addends to 19
+ * { op: 'add', max: 20, addendMax: 10 }    // ADD::to10 — sums to 20, addends to 10
+ * { op: 'sub', max: 20 }                   // SUB::to20 — minuends to 20
+ * { op: 'sub', max: 10 }                   // SUB::to10 — minuends to 10
+ * ```
+ *
+ * The asymmetry is the point and is not a slip: "up to 10" caps the ADDENDS for
+ * addition (10 + 10 = 20 is a sum of twenty) and the MINUEND for subtraction.
+ * See the header.
+ *
+ * @param {{ op: string, max: number, addendMax?: number }} params
  * @param {() => number} rng
- * @returns {Object[]} 18 cards: 6 A, then 6 B, then 6 C.
+ * @returns {Object[]} 18 cards in three sections of six — A, B, C where all
+ *   three blocks have cards, and see `sectionPlan` where they do not.
  */
 export function generate(params, rng) {
   assertRng(rng, 'arithmetic generate')
@@ -728,32 +1010,30 @@ export function generate(params, rng) {
     )
   }
 
-  if (params?.max !== MAX) {
-    throw new TypeError(
-      `arithmetic generate(): this recipe is written for max ${MAX} and got ${JSON.stringify(params?.max)}. ` +
-        `The card space, the three block sizes and the reserved slots are all facts about the 3–20 deck ` +
-        `(PLAN 4.2, PLAN 4.3); a new ceiling is a new recipe, and a new option id with it.`
-    )
-  }
-
-  const pools = poolsFor(recipe, MAX)
+  // Validates the ceiling and throws with the reason. Each recipe owns its own
+  // because the two ceilings are different quantities.
+  const pools = poolsFor(recipe, recipe.space(params))
 
   const laid = new Array(DECK_SIZE)
   const pinned = new Set()
+  // Only ever non-empty when two sections share one block's pool; see drawBlock.
+  const taken = new Set()
 
-  BLOCK_ORDER.forEach((block, blockIndex) => {
-    const start = blockStart(blockIndex)
-    const reserved = recipe.reserved[block]
-    const { pinned: reservedCard, rest } = drawBlock(pools[block], reserved, rng)
+  sectionPlan(pools, recipe.reserved).forEach((section, sectionIndex) => {
+    const start = blockStart(sectionIndex)
+    const { pinned: reservedCard, rest } = drawBlock(pools[section.block], section.reserved, taken, rng)
+
+    if (reservedCard !== null) taken.add(reservedCard)
+    for (const card of rest) taken.add(card)
 
     const others = shuffle(rest, rng)
     let next = 0
 
     for (let slot = start; slot < start + BLOCK_SIZE; slot++) {
-      laid[slot] = slot === reserved.slot ? reservedCard : others[next++]
+      laid[slot] = section.reserved !== null && slot === section.reserved.slot ? reservedCard : others[next++]
     }
 
-    pinned.add(reserved.slot)
+    if (section.reserved !== null) pinned.add(section.reserved.slot)
   })
 
   return fixAdjacentAnswers(laid, pinned, rng).map((card, index) => equationCard(recipe, card, index, rng))
@@ -762,21 +1042,28 @@ export function generate(params, rng) {
 /**
  * The whole card space of one recipe, for tests.
  *
- * Exported because the three block sizes — 44/109/36 and 44/54/36 — are how you
- * know the block predicates are right, and a test that re-implemented the space
- * to count it would only be testing itself. Nothing in the app calls this;
- * `generate` uses the same two functions directly.
+ * Exported because the block sizes — 44/109/36, 44/54/36, 44/19/36 and 44/0/0 —
+ * are how you know the block predicates are right, and a test that
+ * re-implemented the space to count it would only be testing itself. Nothing in
+ * the app calls this; `generate` goes through `recipe.space`, which validates
+ * the ceiling as well.
  *
- * @param {string} op
- * @param {number} [max]
+ * Takes the same params `generate` does, so a test states a deck the way the
+ * manifest states it and cannot accidentally describe a space no option has.
+ *
+ * @param {{ op: string, max?: number, addendMax?: number }|string} params  An op
+ *   on its own is the to20 deck, which is what every existing caller means.
  * @returns {Fact[]}
  */
-export function cardSpace(op, max = MAX) {
-  const recipe = RECIPES[op]
+export function cardSpace(params) {
+  const asked = typeof params === 'string' ? { op: params } : (params ?? {})
+  const recipe = RECIPES[asked.op]
 
   if (recipe === undefined) {
-    throw new TypeError(`cardSpace(): unknown op ${JSON.stringify(op)}. Expected one of: ${Object.values(OPS).join(', ')}.`)
+    throw new TypeError(
+      `cardSpace(): unknown op ${JSON.stringify(asked.op)}. Expected one of: ${Object.values(OPS).join(', ')}.`
+    )
   }
 
-  return recipe.space(max)
+  return recipe.space({ max: MAX, ...asked })
 }
